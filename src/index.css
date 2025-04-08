@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --netflix-red: #E50914;
+  --netflix-black: #141414;
+  --netflix-dark: #181818;
+}
+
+body {
+  @apply bg-netflix-black text-white font-sans antialiased;
+  margin: 0;
+  padding: 0;
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-netflix-red hover:bg-red-700 text-white font-bold py-2 px-6 rounded transition-colors duration-300;
+  }
+  
+  .card {
+    @apply bg-netflix-dark rounded-md overflow-hidden transition-transform duration-300 hover:scale-105 shadow-lg;
+  }
+  
+  .container-custom {
+    @apply container mx-auto px-4 md:px-8;
+  }
+}
+
+@keyframes code-scroll-left {
+  0% {
+    transform: translateX(0);
+    left: 100%;
+  }
+  100% {
+    transform: translateX(-200%);
+    left: 0;
+  }
+}
+
+@keyframes code-scroll-right {
+  0% {
+    transform: translateX(0);
+    left: -100%;
+  }
+  100% {
+    transform: translateX(200%);
+    left: 0;
+  }
+}
+
+.code-background {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 100vh;
+  background-color: rgb(10, 10, 10);
+  background-image: linear-gradient(to bottom, rgba(0, 30, 10, 0.15), rgba(0, 0, 0, 0.95));
+}
+
+.code-background::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at center, rgba(0, 20, 0, 0.1) 0%, rgba(0, 0, 0, 0.7) 70%);
+  z-index: 4;
+  pointer-events: none;
+}
+
+.code-line {
+  position: absolute;
+  font-family: 'Fira Code', 'Consolas', 'Courier New', monospace;
+  color: #0f0;
+  font-size: 1rem;
+  white-space: nowrap;
+  text-shadow: 0 0 12px rgba(0, 255, 0, 0.6);
+  opacity: 0.6;
+  z-index: 5;
+  pointer-events: none;
+  letter-spacing: 0.5px;
+  filter: blur(2px);
+}
+
+.hero-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+}
