@@ -1,4 +1,4 @@
-// src/App.jsx (atualizado com Firebase e autenticação)
+// src/App.jsx (correção de redirecionamentos)
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Home from './pages/Home';
@@ -6,6 +6,7 @@ import Materiais from './pages/Materiais';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Loading from './components/Loading';
+import ErrorPage from './pages/ErrorPage';
 
 // Componentes de Admin
 import AdminLayout from './admin/components/AdminLayout';
@@ -77,6 +78,9 @@ function App() {
       <AuthProvider>
         <AdminProvider>
           <Routes>
+            {/* Rota raiz - redireciona para página de erro */}
+            <Route path="/" element={<ErrorPage message="Selecione uma DevFlix específica" code="404" />} />
+            
             {/* Rota de Login */}
             <Route path="/admin/login" element={<Login />} />
             
@@ -89,8 +93,8 @@ function App() {
               </Route>
             </Route>
             
-            {/* Rotas Públicas */}
-            <Route path="/" element={
+            {/* Rotas específicas para cada DevFlix */}
+            <Route path="/:path" element={
               isLoading ? (
                 <Loading />
               ) : (
@@ -104,26 +108,7 @@ function App() {
               )
             } />
             
-            <Route path="/:path" element={
-              <DevflixProvider>
-                <Navbar />
-                <main className="flex-grow">
-                  <Home />
-                </main>
-                <Footer />
-              </DevflixProvider>
-            } />
-            
-            <Route path="/materiais" element={
-              <DevflixProvider>
-                <Navbar />
-                <main className="flex-grow">
-                  <Materiais />
-                </main>
-                <Footer />
-              </DevflixProvider>
-            } />
-            
+            {/* Rotas de materiais - sempre seguem o caminho da home */}
             <Route path="/:path/materiais" element={
               <DevflixProvider>
                 <Navbar />
@@ -134,14 +119,7 @@ function App() {
               </DevflixProvider>
             } />
             
-            <Route path="/aula/:id" element={
-              <DevflixProvider>
-                <Navbar />
-                <AulaPage match={{ params: { id: window.location.pathname.split('/').pop() } }} />
-                <Footer />
-              </DevflixProvider>
-            } />
-            
+            {/* Rotas de aulas */}
             <Route path="/:path/aula/:id" element={
               <DevflixProvider>
                 <Navbar />
@@ -151,7 +129,7 @@ function App() {
             } />
             
             {/* Rota para redirecionar caminhos não encontrados */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<ErrorPage message="Página não encontrada" code="404" />} />
           </Routes>
         </AdminProvider>
       </AuthProvider>

@@ -1,4 +1,4 @@
-// src/admin/components/MaterialsEditor.jsx
+// src/admin/components/MaterialsEditor.jsx (correção completa)
 import { useState, useEffect } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 
@@ -8,6 +8,7 @@ const MaterialsEditor = () => {
   const [materials, setMaterials] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Estado para o formulário
   const [formTitle, setFormTitle] = useState('');
@@ -27,16 +28,20 @@ const MaterialsEditor = () => {
   
   useEffect(() => {
     if (currentDevflix && currentDevflix.classes.length > 0) {
-      setSelectedClassId(currentDevflix.classes[0].id);
+      const firstClassId = currentDevflix.classes[0].id;
+      setSelectedClassId(firstClassId);
     }
   }, [currentDevflix]);
   
   useEffect(() => {
     if (currentDevflix && selectedClassId) {
+      // Buscar materiais para a aula selecionada
       const classMaterials = currentDevflix.materials.find(
         m => m.classId === selectedClassId
       );
       setMaterials(classMaterials ? classMaterials.items : []);
+    } else {
+      setMaterials([]);
     }
   }, [currentDevflix, selectedClassId]);
   
@@ -62,31 +67,63 @@ const MaterialsEditor = () => {
     setFormLocked(material.locked);
   };
   
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     
-    const materialData = {
-      title: formTitle,
-      url: formUrl,
-      type: formType,
-      locked: formLocked
-    };
-    
-    if (editingId) {
-      // Atualizando material existente
-      updateMaterial(selectedClassId, editingId, materialData);
-    } else {
-      // Adicionando novo material
-      addMaterial(selectedClassId, materialData);
+    try {
+      const materialData = {
+        title: formTitle,
+        url: formUrl,
+        type: formType,
+        locked: formLocked
+      };
+      
+      if (editingId) {
+        // Atualizando material existente
+        await updateMaterial(selectedClassId, editingId, materialData);
+        alert('Material atualizado com sucesso!');
+      } else {
+        // Adicionando novo material
+        await addMaterial(selectedClassId, materialData);
+        alert('Material adicionado com sucesso!');
+      }
+      
+      // Atualizar a lista de materiais
+      if (currentDevflix) {
+        const updatedMaterials = currentDevflix.materials.find(
+          m => m.classId === selectedClassId
+        );
+        setMaterials(updatedMaterials ? updatedMaterials.items : []);
+      }
+      
+      setShowForm(false);
+      resetForm();
+    } catch (error) {
+      console.error('Erro ao salvar material:', error);
+      alert(`Erro ao ${editingId ? 'atualizar' : 'adicionar'} material: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    setShowForm(false);
-    resetForm();
   };
   
-  const handleDelete = (id) => {
-    if (window.confirm('Tem certeza que deseja excluir este material?')) {
-      deleteMaterial(selectedClassId, id);
+  const handleDelete = async (id) => {
+    if (!window.confirm('Tem certeza que deseja excluir este material?')) return;
+    
+    try {
+      await deleteMaterial(selectedClassId, id);
+      alert('Material excluído com sucesso!');
+      
+      // Atualizar a lista de materiais
+      if (currentDevflix) {
+        const updatedMaterials = currentDevflix.materials.find(
+          m => m.classId === selectedClassId
+        );
+        setMaterials(updatedMaterials ? updatedMaterials.items : []);
+      }
+    } catch (error) {
+      console.error('Erro ao excluir material:', error);
+      alert(`Erro ao excluir material: ${error.message}`);
     }
   };
   
@@ -218,14 +255,16 @@ const MaterialsEditor = () => {
                   resetForm();
                 }}
                 className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors"
+                disabled={isSubmitting}
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-netflix-red text-white rounded hover:bg-red-700 transition-colors"
+                className={`px-4 py-2 ${isSubmitting ? 'bg-gray-600' : 'bg-netflix-red hover:bg-red-700'} text-white rounded transition-colors`}
+                disabled={isSubmitting}
               >
-                {editingId ? 'Atualizar' : 'Adicionar'}
+                {isSubmitting ? 'Salvando...' : (editingId ? 'Atualizar' : 'Adicionar')}
               </button>
             </div>
           </form>

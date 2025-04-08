@@ -1,4 +1,4 @@
-// src/admin/components/LinkEditor.jsx
+// src/admin/components/LinkEditor.jsx (correção)
 import { useState, useEffect } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 
@@ -6,6 +6,7 @@ const LinkEditor = () => {
   const { currentDevflix, updateClass } = useAdmin();
   const [classes, setClasses] = useState([]);
   const [editingId, setEditingId] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
   
   // Estado para o formulário
   const [formTitle, setFormTitle] = useState('');
@@ -20,18 +21,47 @@ const LinkEditor = () => {
   const handleEditClick = (classItem) => {
     setEditingId(classItem.id);
     setFormTitle(classItem.title);
-    setFormVideoLink(classItem.videoLink);
+    setFormVideoLink(classItem.videoLink || '');
   };
   
-  const handleSave = () => {
-    updateClass(editingId, {
-      title: formTitle,
-      videoLink: formVideoLink
-    });
+  const handleSave = async () => {
+    if (!currentDevflix) return;
     
-    setEditingId(null);
-    setFormTitle('');
-    setFormVideoLink('');
+    try {
+      setIsSaving(true);
+      
+      // Validar URL do vídeo
+      let validatedVideoLink = formVideoLink;
+      if (validatedVideoLink && !validatedVideoLink.startsWith('http')) {
+        validatedVideoLink = 'https://' + validatedVideoLink;
+      }
+      
+      // Atualizar no Firebase
+      await updateClass(editingId, {
+        title: formTitle,
+        videoLink: validatedVideoLink
+      });
+      
+      // Atualizar estado local
+      setClasses(prevClasses => 
+        prevClasses.map(cls => 
+          cls.id === editingId 
+            ? { ...cls, title: formTitle, videoLink: validatedVideoLink } 
+            : cls
+        )
+      );
+      
+      setEditingId(null);
+      setFormTitle('');
+      setFormVideoLink('');
+      
+      alert('Aula atualizada com sucesso!');
+    } catch (error) {
+      console.error('Erro ao atualizar aula:', error);
+      alert(`Erro ao atualizar aula: ${error.message}`);
+    } finally {
+      setIsSaving(false);
+    }
   };
   
   const handleCancel = () => {
@@ -85,14 +115,16 @@ const LinkEditor = () => {
                   <button
                     onClick={handleCancel}
                     className="px-3 py-1.5 bg-gray-700 text-white text-sm rounded hover:bg-gray-600 transition-colors"
+                    disabled={isSaving}
                   >
                     Cancelar
                   </button>
                   <button
                     onClick={handleSave}
-                    className="px-3 py-1.5 bg-netflix-red text-white text-sm rounded hover:bg-red-700 transition-colors"
+                    className={`px-3 py-1.5 ${isSaving ? 'bg-gray-600' : 'bg-netflix-red hover:bg-red-700'} text-white text-sm rounded transition-colors`}
+                    disabled={isSaving}
                   >
-                    Salvar
+                    {isSaving ? 'Salvando...' : 'Salvar'}
                   </button>
                 </div>
               </div>
@@ -104,14 +136,18 @@ const LinkEditor = () => {
                     <svg className="w-4 h-4 text-netflix-red mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
                     </svg>
-                    <a 
-                      href={classItem.videoLink} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-gray-400 text-sm hover:text-netflix-red truncate max-w-md"
-                    >
-                      {classItem.videoLink}
-                    </a>
+                    {classItem.videoLink ? (
+                      <a 
+                        href={classItem.videoLink} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-gray-400 text-sm hover:text-netflix-red truncate max-w-md"
+                      >
+                        {classItem.videoLink}
+                      </a>
+                    ) : (
+                      <span className="text-gray-500 text-sm italic">Link não definido</span>
+                    )}
                   </div>
                 </div>
                 

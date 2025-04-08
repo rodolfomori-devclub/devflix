@@ -1,163 +1,16 @@
-// src/admin/contexts/AdminContext.jsx (atualizado)
+// src/admin/contexts/AdminContext.jsx (correção Firebase)
 import { createContext, useContext, useState, useEffect } from 'react';
+import { generateId } from '../utils/adminHelpers';
 import { 
-  saveToStorage, 
-  generateId, 
-  getDefaultDevflix
-} from '../utils/adminHelpers';
-
-// Mock da API - em um caso real, isso seria armazenado em um banco de dados
-const initialDevflixData = [
-  {
-    id: '1',
-    name: 'DevFlix 16',
-    path: 'dev-16',
-    bannerEnabled: true,
-    banner: {
-      text: 'Aproveite 50% de desconto nos próximos 3 dias!',
-      buttonText: 'Garantir Vaga',
-      backgroundColor: '#ff3f3f',
-      buttonColor: '#222222',
-      buttonLink: 'https://exemplo.com/promo'
-    },
-    classes: [
-      {
-        id: '1',
-        title: 'Aula 1: Introdução ao HTML e CSS',
-        coverImage: '/images/aula1.jpg',
-        videoLink: 'https://exemplo.com/aula1'
-      },
-      {
-        id: '2',
-        title: 'Aula 2: JavaScript Básico',
-        coverImage: '/images/aula2.jpg',
-        videoLink: 'https://exemplo.com/aula2'
-      },
-      {
-        id: '3',
-        title: 'Aula 3: React Fundamentos',
-        coverImage: '/images/aula3.jpg',
-        videoLink: 'https://exemplo.com/aula3'
-      },
-      {
-        id: '4',
-        title: 'Aula 4: Projeto Final',
-        coverImage: '/images/aula4.jpg',
-        videoLink: 'https://exemplo.com/aula4'
-      }
-    ],
-    materials: [
-      {
-        classId: '1',
-        items: [
-          { id: '1-1', title: 'Slides da Aula 1', url: '#', type: 'slides', locked: false },
-          { id: '1-2', title: 'Código dos Exemplos', url: '#', type: 'code', locked: false },
-          { id: '1-3', title: 'Exercícios Práticos', url: '#', type: 'exercise', locked: true },
-        ]
-      },
-      {
-        classId: '2',
-        items: [
-          { id: '2-1', title: 'Slides da Aula 2', url: '#', type: 'slides', locked: false },
-          { id: '2-2', title: 'Código dos Exemplos', url: '#', type: 'code', locked: true },
-        ]
-      },
-      {
-        classId: '3',
-        items: [
-          { id: '3-1', title: 'Slides da Aula 3', url: '#', type: 'slides', locked: false },
-          { id: '3-2', title: 'Repositório do Projeto', url: '#', type: 'code', locked: true },
-        ]
-      },
-      {
-        classId: '4',
-        items: [
-          { id: '4-1', title: 'Slides da Aula 4', url: '#', type: 'slides', locked: false },
-          { id: '4-2', title: 'Código Final', url: '#', type: 'code', locked: true },
-        ]
-      }
-    ]
-  },
-  {
-    id: '2',
-    name: 'DevFlix 17',
-    path: 'dev-17',
-    bannerEnabled: false,
-    banner: {
-      text: '',
-      buttonText: '',
-      backgroundColor: '#3366ff',
-      buttonColor: '#ffffff',
-      buttonLink: ''
-    },
-    classes: [
-      {
-        id: '1',
-        title: 'Aula 1: HTML e CSS Avançados',
-        coverImage: '/images/aula1.jpg',
-        videoLink: 'https://exemplo.com/aula1-nova'
-      },
-      {
-        id: '2',
-        title: 'Aula 2: JavaScript ES6+',
-        coverImage: '/images/aula2.jpg',
-        videoLink: 'https://exemplo.com/aula2-nova'
-      },
-      {
-        id: '3',
-        title: 'Aula 3: React Hooks',
-        coverImage: '/images/aula3.jpg',
-        videoLink: 'https://exemplo.com/aula3-nova'
-      },
-      {
-        id: '4',
-        title: 'Aula 4: Deploy de Aplicações',
-        coverImage: '/images/aula4.jpg',
-        videoLink: 'https://exemplo.com/aula4-nova'
-      }
-    ],
-    materials: [
-      {
-        classId: '1',
-        items: [
-          { id: '1-1', title: 'Slides da Aula 1', url: '#', type: 'slides', locked: false },
-          { id: '1-2', title: 'Exemplos CSS Grid', url: '#', type: 'code', locked: false },
-        ]
-      },
-      {
-        classId: '2',
-        items: [
-          { id: '2-1', title: 'Slides da Aula 2', url: '#', type: 'slides', locked: false },
-          { id: '2-2', title: 'Exemplos Práticos', url: '#', type: 'exercise', locked: true },
-        ]
-      },
-      {
-        classId: '3',
-        items: [
-          { id: '3-1', title: 'Slides da Aula 3', url: '#', type: 'slides', locked: false },
-        ]
-      },
-      {
-        classId: '4',
-        items: [
-          { id: '4-1', title: 'Slides da Aula 4', url: '#', type: 'slides', locked: false },
-          { id: '4-2', title: 'Guia de Deploy', url: '#', type: 'doc', locked: false },
-        ]
-      }
-    ]
-  }
-];
-
-// Função para obter dados do localStorage ou usar os dados iniciais
-const getStoredData = () => {
-  try {
-    const storedData = localStorage.getItem('devflixInstances');
-    return storedData ? JSON.parse(storedData) : initialDevflixData;
-  } catch (error) {
-    console.error('Erro ao recuperar dados armazenados:', error);
-    return initialDevflixData;
-  }
-};
+  getAllDevflixInstances, 
+  getDevflixById, 
+  addDevflixInstance as addDevflixToFirebase, 
+  updateDevflixInstance as updateDevflixInFirebase, 
+  deleteDevflixInstance as deleteDevflixFromFirebase,
+  updateClassMaterials,
+  updateClassInfo,
+  updateBannerSettings
+} from '../../firebase/firebaseService';
 
 // Cria o contexto
 const AdminContext = createContext();
@@ -169,20 +22,23 @@ export const AdminProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Simulação de carregamento de dados
+  // Carregamento inicial de dados do Firebase
   useEffect(() => {
-    // Em um ambiente real, aqui faria uma chamada à API
-    const fetchData = () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
         setError(null);
         
-        setTimeout(() => {
-          const instances = getStoredData();
-          setDevflixInstances(instances);
-          setCurrentDevflix(instances.length > 0 ? instances[0] : null);
-          setIsLoading(false);
-        }, 800);
+        // Buscar todas as instâncias do Firebase
+        const instances = await getAllDevflixInstances();
+        setDevflixInstances(instances);
+        
+        // Selecionar a primeira instância, se existir
+        if (instances.length > 0) {
+          setCurrentDevflix(instances[0]);
+        }
+        
+        setIsLoading(false);
       } catch (err) {
         console.error('Erro ao carregar dados:', err);
         setError('Falha ao carregar dados. Por favor, tente novamente.');
@@ -193,25 +49,19 @@ export const AdminProvider = ({ children }) => {
     fetchData();
   }, []);
 
-  // Atualizar o localStorage sempre que devflixInstances mudar
-  useEffect(() => {
-    if (!isLoading) {
-      saveToStorage(devflixInstances);
-    }
-  }, [devflixInstances, isLoading]);
-
   // Função para adicionar uma nova instância DevFlix
-  const addDevflixInstance = (newInstance) => {
+  const addDevflixInstance = async (newInstance) => {
     try {
-      const instance = getDefaultDevflix(newInstance.name, newInstance.path);
+      // Adicionar instância no Firebase
+      const newId = await addDevflixToFirebase(newInstance);
       
-      setDevflixInstances(prev => {
-        const updated = [...prev, instance];
-        saveToStorage(updated);
-        return updated;
-      });
+      // Buscar a instância completa
+      const addedInstance = await getDevflixById(newId);
       
-      return instance.id;
+      // Atualizar estado local
+      setDevflixInstances(prev => [...prev, addedInstance]);
+      
+      return newId;
     } catch (err) {
       console.error('Erro ao adicionar instância:', err);
       setError('Falha ao adicionar instância. Verifique se o caminho é único.');
@@ -220,16 +70,19 @@ export const AdminProvider = ({ children }) => {
   };
 
   // Função para atualizar uma instância existente
-  const updateDevflixInstance = (id, updatedData) => {
+  const updateDevflixInstance = async (id, updatedData) => {
     try {
-      setDevflixInstances(prev => {
-        const updated = prev.map(instance => 
-          instance.id === id ? { ...instance, ...updatedData } : instance
-        );
-        saveToStorage(updated);
-        return updated;
-      });
+      // Atualizar no Firebase
+      await updateDevflixInFirebase(id, updatedData);
       
+      // Atualizar estado local para refletir as mudanças
+      const updatedInstances = devflixInstances.map(instance => 
+        instance.id === id ? { ...instance, ...updatedData } : instance
+      );
+      
+      setDevflixInstances(updatedInstances);
+      
+      // Também atualiza o currentDevflix se estiver editando a instância selecionada
       if (currentDevflix && currentDevflix.id === id) {
         setCurrentDevflix(prev => ({ ...prev, ...updatedData }));
       }
@@ -243,17 +96,18 @@ export const AdminProvider = ({ children }) => {
   };
 
   // Função para deletar uma instância
-  const deleteDevflixInstance = (id) => {
+  const deleteDevflixInstance = async (id) => {
     try {
-      setDevflixInstances(prev => {
-        const updated = prev.filter(instance => instance.id !== id);
-        saveToStorage(updated);
-        return updated;
-      });
+      // Deletar no Firebase
+      await deleteDevflixFromFirebase(id);
       
+      // Atualizar estado local
+      const updatedInstances = devflixInstances.filter(instance => instance.id !== id);
+      setDevflixInstances(updatedInstances);
+      
+      // Se a instância atual foi deletada, selecionar outra
       if (currentDevflix && currentDevflix.id === id) {
-        const remaining = devflixInstances.filter(instance => instance.id !== id);
-        setCurrentDevflix(remaining.length > 0 ? remaining[0] : null);
+        setCurrentDevflix(updatedInstances.length > 0 ? updatedInstances[0] : null);
       }
       
       return true;
@@ -265,11 +119,15 @@ export const AdminProvider = ({ children }) => {
   };
 
   // Função para selecionar uma instância
-  const selectDevflix = (id) => {
+  const selectDevflix = async (id) => {
     try {
-      const selected = devflixInstances.find(instance => instance.id === id);
-      if (selected) {
-        setCurrentDevflix(selected);
+      // Buscar os dados atualizados no Firebase
+      const instance = await getDevflixById(id);
+      
+      if (instance) {
+        setCurrentDevflix(instance);
+      } else {
+        throw new Error('Instância não encontrada');
       }
     } catch (err) {
       console.error('Erro ao selecionar instância:', err);
@@ -278,15 +136,36 @@ export const AdminProvider = ({ children }) => {
   };
 
   // Função para atualizar materiais de apoio
-  const updateMaterials = (classId, materials) => {
+  const updateMaterials = async (classId, materials) => {
     if (!currentDevflix) return;
     
     try {
-      const updatedMaterials = currentDevflix.materials.map(item => 
-        item.classId === classId ? { classId, items: materials } : item
-      );
+      // Verificar se já existe um item para esta classId
+      const hasMaterials = currentDevflix.materials.some(m => m.classId === classId);
       
-      updateDevflixInstance(currentDevflix.id, { materials: updatedMaterials });
+      let updatedMaterials;
+      
+      // Se não existe, adiciona um novo item
+      if (!hasMaterials) {
+        updatedMaterials = [...currentDevflix.materials, { classId, items: materials }];
+      } else {
+        // Se existe, atualiza o item existente
+        updatedMaterials = currentDevflix.materials.map(item => 
+          item.classId === classId ? { classId, items: materials } : item
+        );
+      }
+      
+      // Atualizar no Firebase
+      await updateClassMaterials(currentDevflix.id, classId, materials);
+      
+      // Atualizar estado local
+      const updated = { ...currentDevflix, materials: updatedMaterials };
+      setCurrentDevflix(updated);
+      
+      // Atualizar a lista de instâncias
+      setDevflixInstances(prev => prev.map(instance => 
+        instance.id === currentDevflix.id ? updated : instance
+      ));
       
       return true;
     } catch (err) {
@@ -297,23 +176,47 @@ export const AdminProvider = ({ children }) => {
   };
 
   // Função para adicionar material de apoio
-  const addMaterial = (classId, material) => {
+  const addMaterial = async (classId, material) => {
     if (!currentDevflix) return;
     
     try {
+      // Encontrar os materiais para esta aula
       const classMaterials = currentDevflix.materials.find(m => m.classId === classId);
       
-      if (classMaterials) {
-        const newMaterial = {
-          id: `${classId}-${generateId()}`,
-          ...material
+      const newMaterial = {
+        id: `${classId}-${generateId()}`,
+        ...material
+      };
+      
+      // Se não existe, criar um novo para esta aula
+      if (!classMaterials) {
+        const newClassMaterials = {
+          classId,
+          items: [newMaterial]
         };
         
-        const updatedItems = [...classMaterials.items, newMaterial];
-        updateMaterials(classId, updatedItems);
+        const updatedMaterials = [...currentDevflix.materials, newClassMaterials];
         
-        return newMaterial.id;
+        // Atualizar no Firebase
+        await updateClassMaterials(currentDevflix.id, classId, [newMaterial]);
+        
+        // Atualizar estado local
+        const updated = { ...currentDevflix, materials: updatedMaterials };
+        setCurrentDevflix(updated);
+        
+        // Atualizar a lista de instâncias
+        setDevflixInstances(prev => prev.map(instance => 
+          instance.id === currentDevflix.id ? updated : instance
+        ));
+      } else {
+        // Se existe, adicionar ao existente
+        const updatedItems = [...classMaterials.items, newMaterial];
+        
+        // Atualizar no Firebase e no estado local
+        await updateMaterials(classId, updatedItems);
       }
+      
+      return newMaterial.id;
     } catch (err) {
       console.error('Erro ao adicionar material:', err);
       setError('Falha ao adicionar material.');
@@ -322,7 +225,7 @@ export const AdminProvider = ({ children }) => {
   };
 
   // Função para atualizar material de apoio
-  const updateMaterial = (classId, materialId, updatedData) => {
+  const updateMaterial = async (classId, materialId, updatedData) => {
     if (!currentDevflix) return;
     
     try {
@@ -333,7 +236,8 @@ export const AdminProvider = ({ children }) => {
           item.id === materialId ? { ...item, ...updatedData } : item
         );
         
-        updateMaterials(classId, updatedItems);
+        // Atualizar no Firebase e no estado local
+        await updateMaterials(classId, updatedItems);
         
         return true;
       }
@@ -345,7 +249,7 @@ export const AdminProvider = ({ children }) => {
   };
 
   // Função para deletar material de apoio
-  const deleteMaterial = (classId, materialId) => {
+  const deleteMaterial = async (classId, materialId) => {
     if (!currentDevflix) return;
     
     try {
@@ -353,7 +257,9 @@ export const AdminProvider = ({ children }) => {
       
       if (classMaterials) {
         const updatedItems = classMaterials.items.filter(item => item.id !== materialId);
-        updateMaterials(classId, updatedItems);
+        
+        // Atualizar no Firebase e no estado local
+        await updateMaterials(classId, updatedItems);
         
         return true;
       }
@@ -365,7 +271,7 @@ export const AdminProvider = ({ children }) => {
   };
 
   // Função para atualizar informações das aulas
-  const updateClass = (classId, updatedData) => {
+  const updateClass = async (classId, updatedData) => {
     if (!currentDevflix) return;
     
     try {
@@ -373,7 +279,17 @@ export const AdminProvider = ({ children }) => {
         classItem.id === classId ? { ...classItem, ...updatedData } : classItem
       );
       
-      updateDevflixInstance(currentDevflix.id, { classes: updatedClasses });
+      // Atualizar no Firebase
+      await updateClassInfo(currentDevflix.id, classId, updatedData);
+      
+      // Atualizar estado local
+      const updated = { ...currentDevflix, classes: updatedClasses };
+      setCurrentDevflix(updated);
+      
+      // Atualizar a lista de instâncias
+      setDevflixInstances(prev => prev.map(instance => 
+        instance.id === currentDevflix.id ? updated : instance
+      ));
       
       return true;
     } catch (err) {
@@ -384,14 +300,23 @@ export const AdminProvider = ({ children }) => {
   };
 
   // Função para atualizar o banner
-  const updateBanner = (bannerData, enabled = true) => {
+  const updateBanner = async (bannerData) => {
     if (!currentDevflix) return;
     
     try {
-      updateDevflixInstance(currentDevflix.id, {
-        bannerEnabled: enabled,
-        banner: { ...currentDevflix.banner, ...bannerData }
-      });
+      const updatedBanner = { ...currentDevflix.banner, ...bannerData };
+      
+      // Atualizar no Firebase
+      await updateBannerSettings(currentDevflix.id, updatedBanner, currentDevflix.bannerEnabled);
+      
+      // Atualizar estado local
+      const updated = { ...currentDevflix, banner: updatedBanner };
+      setCurrentDevflix(updated);
+      
+      // Atualizar a lista de instâncias
+      setDevflixInstances(prev => prev.map(instance => 
+        instance.id === currentDevflix.id ? updated : instance
+      ));
       
       return true;
     } catch (err) {
@@ -401,35 +326,28 @@ export const AdminProvider = ({ children }) => {
     }
   };
 
-  // Função para desabilitar o banner
-  const toggleBanner = (enabled) => {
+  // Função para ativar/desativar o banner
+  const toggleBanner = async (enabled) => {
     if (!currentDevflix) return;
     
     try {
-      updateDevflixInstance(currentDevflix.id, { bannerEnabled: enabled });
+      // Atualizar no Firebase
+      await updateBannerSettings(currentDevflix.id, currentDevflix.banner, enabled);
+      
+      // Atualizar estado local
+      const updated = { ...currentDevflix, bannerEnabled: enabled };
+      setCurrentDevflix(updated);
+      
+      // Atualizar a lista de instâncias
+      setDevflixInstances(prev => prev.map(instance => 
+        instance.id === currentDevflix.id ? updated : instance
+      ));
       
       return true;
     } catch (err) {
       console.error('Erro ao alterar status do banner:', err);
       setError('Falha ao alterar status do banner.');
       throw err;
-    }
-  };
-
-  // Limpar todos os dados armazenados (para funcionalidade de reset)
-  const clearAllData = () => {
-    try {
-      localStorage.removeItem('devflixInstances');
-      
-      const instances = getStoredData(); // Recarregar os dados iniciais
-      setDevflixInstances(instances);
-      setCurrentDevflix(instances.length > 0 ? instances[0] : null);
-      
-      return true;
-    } catch (err) {
-      console.error('Erro ao limpar dados:', err);
-      setError('Falha ao limpar dados.');
-      return false;
     }
   };
 
@@ -448,8 +366,7 @@ export const AdminProvider = ({ children }) => {
     deleteMaterial,
     updateClass,
     updateBanner,
-    toggleBanner,
-    clearAllData
+    toggleBanner
   };
 
   return (

@@ -1,12 +1,16 @@
-// src/components/Navbar.jsx
+// src/components/Navbar.jsx (ajuste para banner)
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useDevflix } from '../contexts/DevflixContext';
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+  
+  // Obtém informações do banner do contexto DevFlix
+  const { bannerEnabled, bannerVisible } = useDevflix();
   
   useEffect(() => {
     const handleScroll = () => {
@@ -27,9 +31,16 @@ const Navbar = () => {
     setMenuOpen(!menuOpen);
   };
   
+  // Extrair o path da URL para manter consistência nas rotas
+  const pathSegments = location.pathname.split('/').filter(Boolean);
+  const basePath = pathSegments.length > 0 ? `/${pathSegments[0]}` : '';
+  
+  // Ajustar posição do navbar baseado na presença do banner
+  const navbarPosition = (bannerEnabled && bannerVisible) ? 'top-[60px]' : 'top-0';
+  
   return (
     <motion.nav 
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      className={`fixed left-0 right-0 z-40 transition-all duration-300 ${navbarPosition} ${
         scrolled ? 'bg-netflix-black/90 backdrop-blur-sm py-3 shadow-lg' : 'bg-gradient-to-b from-black/80 to-transparent py-5'
       }`}
       initial={{ opacity: 0, y: -20 }}
@@ -38,21 +49,25 @@ const Navbar = () => {
     >
       <div className="container-custom flex justify-between items-center">
         {/* Logo */}
-        <Link to="/" className="flex items-center">
+        <Link to={basePath} className="flex items-center">
           <span className="text-netflix-red font-bold text-3xl">DEV<span className="text-white">FLIX</span></span>
         </Link>
         
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center space-x-8">
           <Link 
-            to="/" 
-            className={`hover:text-netflix-red transition-colors ${location.pathname === '/' ? 'text-netflix-red font-medium' : 'text-white'}`}
+            to={basePath} 
+            className={`hover:text-netflix-red transition-colors ${
+              location.pathname === basePath ? 'text-netflix-red font-medium' : 'text-white'
+            }`}
           >
             Home
           </Link>
           <Link 
-            to="/materiais" 
-            className={`hover:text-netflix-red transition-colors ${location.pathname === '/materiais' ? 'text-netflix-red font-medium' : 'text-white'}`}
+            to={`${basePath}/materiais`} 
+            className={`hover:text-netflix-red transition-colors ${
+              location.pathname.includes('/materiais') ? 'text-netflix-red font-medium' : 'text-white'
+            }`}
           >
             Materiais de Apoio
           </Link>
@@ -85,15 +100,19 @@ const Navbar = () => {
           >
             <div className="container-custom py-4 space-y-4">
               <Link 
-                to="/" 
-                className={`block py-2 ${location.pathname === '/' ? 'text-netflix-red font-medium' : 'text-white'}`}
+                to={basePath} 
+                className={`block py-2 ${
+                  location.pathname === basePath ? 'text-netflix-red font-medium' : 'text-white'
+                }`}
                 onClick={() => setMenuOpen(false)}
               >
                 Home
               </Link>
               <Link 
-                to="/materiais" 
-                className={`block py-2 ${location.pathname === '/materiais' ? 'text-netflix-red font-medium' : 'text-white'}`}
+                to={`${basePath}/materiais`} 
+                className={`block py-2 ${
+                  location.pathname.includes('/materiais') ? 'text-netflix-red font-medium' : 'text-white'
+                }`}
                 onClick={() => setMenuOpen(false)}
               >
                 Materiais de Apoio

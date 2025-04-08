@@ -1,17 +1,28 @@
-// src/pages/Home.jsx (atualizado)
+// src/pages/Home.jsx (atualização do banner)
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { useParams } from 'react-router-dom';
 import CodeAnimation from '../components/CodeAnimation';
 import CourseCard from '../components/CourseCard';
 import PromoBanner from '../components/PromoBanner';
 import { useDevflix } from '../contexts/DevflixContext';
 
 const Home = () => {
-  const { path } = useParams();
-  const { classes, banner, bannerEnabled, isLoading } = useDevflix();
+  const { 
+    classes, 
+    banner, 
+    bannerEnabled, 
+    bannerVisible,
+    toggleBannerVisibility, 
+    isLoading, 
+    error, 
+    path 
+  } = useDevflix();
   
+  // Usa o path do contexto para garantir consistência nas rotas
   const basePath = path ? `/${path}` : '';
+  
+  // Ajuste para o conteúdo principal baseado na presença do banner
+  const contentPaddingTop = (bannerEnabled && bannerVisible) ? 'pt-[120px]' : 'pt-16';
   
   if (isLoading) {
     return (
@@ -21,10 +32,33 @@ const Home = () => {
     );
   }
   
+  if (error) {
+    return (
+      <div className="min-h-screen bg-netflix-black py-20">
+        <div className="container-custom">
+          <div className="max-w-4xl mx-auto bg-netflix-dark p-8 rounded-lg shadow-lg">
+            <h1 className="text-2xl font-bold text-netflix-red mb-4">Erro</h1>
+            <p className="text-white mb-6">{error}</p>
+            <Link 
+              to="/" 
+              className="btn-primary py-2 px-4 inline-block"
+            >
+              Voltar
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   return (
-    <div className="min-h-screen">
+    <div className={`min-h-screen ${contentPaddingTop}`}>
       {/* Banner promocional */}
-      <PromoBanner banner={banner} enabled={bannerEnabled} />
+      <PromoBanner 
+        banner={banner} 
+        enabled={bannerEnabled} 
+        onToggle={toggleBannerVisibility}
+      />
       
       {/* Hero Section */}
       <section className="relative h-screen">

@@ -1,6 +1,6 @@
-// src/pages/Materiais.jsx (atualizado)
+// src/pages/Materiais.jsx (ajuste para router e banner)
 import { motion } from 'framer-motion';
-import { Link, useParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useDevflix } from '../contexts/DevflixContext';
 import PromoBanner from '../components/PromoBanner';
 
@@ -61,10 +61,23 @@ const getIcon = (type, locked) => {
 };
 
 const Materiais = () => {
-  const { path } = useParams();
-  const { classes, materials, banner, bannerEnabled, isLoading, error } = useDevflix();
+  const { 
+    classes, 
+    materials, 
+    banner, 
+    bannerEnabled, 
+    bannerVisible,
+    toggleBannerVisibility,
+    isLoading, 
+    error, 
+    path 
+  } = useDevflix();
   
+  // Usa o path do contexto para garantir consistência nas rotas
   const basePath = path ? `/${path}` : '';
+  
+  // Ajuste para o conteúdo principal baseado na presença do banner
+  const contentPaddingTop = (bannerEnabled && bannerVisible) ? 'pt-[120px]' : 'pt-16';
   
   // Formatar os materiais para exibição
   const materiaisAulas = classes.map(classItem => {
@@ -92,7 +105,7 @@ const Materiais = () => {
             <h1 className="text-2xl font-bold text-netflix-red mb-4">Erro ao carregar materiais</h1>
             <p className="text-white mb-6">{error}</p>
             <Link 
-              to={basePath || '/'} 
+              to={basePath} 
               className="btn-primary py-2 px-4 inline-block"
             >
               Voltar para Home
@@ -104,9 +117,13 @@ const Materiais = () => {
   }
   
   return (
-    <div className="min-h-screen bg-netflix-black py-20">
+    <div className={`min-h-screen bg-netflix-black ${contentPaddingTop}`}>
       {/* Banner promocional */}
-      <PromoBanner banner={banner} enabled={bannerEnabled} />
+      <PromoBanner 
+        banner={banner} 
+        enabled={bannerEnabled} 
+        onToggle={toggleBannerVisibility}
+      />
       
       <div className="container-custom">
         <motion.div 
@@ -118,7 +135,7 @@ const Materiais = () => {
           <div className="flex justify-between items-center mb-12">
             <h1 className="text-4xl font-bold">Materiais de Apoio</h1>
             <Link 
-              to={basePath || '/'}
+              to={basePath}
               className="flex items-center text-gray-300 hover:text-white transition-colors"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -142,7 +159,7 @@ const Materiais = () => {
             >
               <h2 className="text-2xl font-bold mb-4 text-netflix-red">{aula.title}</h2>
               
-              {aula.links.length > 0 ? (
+              {aula.links && aula.links.length > 0 ? (
                 <ul className="space-y-3">
                   {aula.links.map((link, linkIndex) => (
                     <motion.li 
