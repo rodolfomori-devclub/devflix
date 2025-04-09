@@ -1,4 +1,4 @@
-// src/pages/Materiais.jsx (ajuste para router e banner)
+// src/pages/Materiais.jsx (ajuste de espaçamento)
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useDevflix } from '../contexts/DevflixContext';
@@ -77,7 +77,8 @@ const Materiais = () => {
   const basePath = path ? `/${path}` : '';
   
   // Ajuste para o conteúdo principal baseado na presença do banner
-  const contentPaddingTop = (bannerEnabled && bannerVisible) ? 'pt-[120px]' : 'pt-16';
+  // Corrigindo para altura exata do header (16) + banner (60) quando presente
+  const contentPaddingTop = (bannerEnabled && bannerVisible) ? 'pt-[76px]' : 'pt-16';
   
   // Formatar os materiais para exibição
   const materiaisAulas = classes.map(classItem => {
@@ -117,7 +118,7 @@ const Materiais = () => {
   }
   
   return (
-    <div className={`min-h-screen bg-netflix-black ${contentPaddingTop}`}>
+    <div className={`min-h-screen bg-netflix-black ${contentPaddingTop} pb-16`}>
       {/* Banner promocional */}
       <PromoBanner 
         banner={banner} 
@@ -125,7 +126,7 @@ const Materiais = () => {
         onToggle={toggleBannerVisibility}
       />
       
-      <div className="container-custom">
+      <div className="container-custom pt-8">
         <motion.div 
           className="max-w-4xl mx-auto"
           initial={{ opacity: 0, y: 20 }}

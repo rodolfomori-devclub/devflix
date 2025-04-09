@@ -1,4 +1,4 @@
-// src/components/PromoBanner.jsx (com cores personalizadas)
+// src/components/PromoBanner.jsx (correção espaçamento)
 import { useState, useEffect } from 'react';
 
 const PromoBanner = ({ banner, enabled = false, onToggle }) => {
@@ -28,35 +28,35 @@ const PromoBanner = ({ banner, enabled = false, onToggle }) => {
     buttonLink,
     backgroundColor = '#E50914',
     buttonColor = '#141414',
-    titleColor = '#ffffff',     // Nova cor para o título
-    textColor = '#ffffff',      // Nova cor para o texto
-    buttonTextColor = '#ffffff' // Nova cor para o texto do botão
+    titleColor = '#ffffff',
+    textColor = '#ffffff',
+    buttonTextColor = '#ffffff'
   } = banner;
   
   return (
     <div 
-      className="fixed top-0 left-0 right-0 w-full py-3 px-6 transition-all z-50"
+      className="fixed top-0 left-0 right-0 w-full z-50 h-[60px] flex items-center" // Altura fixa de 60px e alinhamento vertical centralizado
       style={{ backgroundColor }}
     >
-      <div className="container-custom flex flex-col sm:flex-row justify-between items-center">
-        <div className="flex-1 flex flex-col items-start text-left">
+      <div className="container-custom flex flex-col sm:flex-row justify-between items-center h-full">
+        <div className="flex-1 flex flex-col sm:flex-row items-start sm:items-center text-left">
           {title && (
             <h1 
-              className="text-lg md:text-xl font-bold mb-1"
-              style={{ color: titleColor }} // Aplicando a cor do título
+              className="text-lg md:text-xl font-bold mr-3"
+              style={{ color: titleColor }}
             >
               {title}
             </h1>
           )}
           <p 
             className="text-sm md:text-base font-medium"
-            style={{ color: textColor }} // Aplicando a cor do texto
+            style={{ color: textColor }}
           >
             {text}
           </p>
         </div>
         
-        <div className="flex items-center mt-2 sm:mt-0">
+        <div className="flex items-center">
           {buttonText && buttonLink && (
             <a 
               href={buttonLink}
@@ -65,7 +65,7 @@ const PromoBanner = ({ banner, enabled = false, onToggle }) => {
               className="px-4 py-1.5 rounded text-xs font-bold mr-4"
               style={{ 
                 backgroundColor: buttonColor,
-                color: buttonTextColor // Aplicando a cor do texto do botão
+                color: buttonTextColor
               }}
             >
               {buttonText}

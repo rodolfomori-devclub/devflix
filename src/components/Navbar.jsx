@@ -1,14 +1,14 @@
-// src/components/Navbar.jsx (com botão de IA)
+// src/components/Navbar.jsx (correção alinhamento)
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDevflix } from '../contexts/DevflixContext';
-import AiChatModal from './AiChatModal'; // Novo componente para o chat com IA
+import AiChatModal from './AiChatModal';
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [aiModalOpen, setAiModalOpen] = useState(false); // Estado para controlar o modal da IA
+  const [aiModalOpen, setAiModalOpen] = useState(false);
   const location = useLocation();
   
   // Obtém informações do banner do contexto DevFlix
@@ -43,19 +43,21 @@ const Navbar = () => {
   const basePath = pathSegments.length > 0 ? `/${pathSegments[0]}` : '';
   
   // Ajustar posição do navbar baseado na presença do banner
+  // Mudança: Removendo o espaçamento estranho entre o banner e o navbar
   const navbarPosition = (bannerEnabled && bannerVisible) ? 'top-[60px]' : 'top-0';
   
+  // Alterando classes para melhorar o alinhamento vertical
   return (
     <>
       <motion.nav 
         className={`fixed left-0 right-0 z-40 transition-all duration-300 ${navbarPosition} ${
-          scrolled ? 'bg-netflix-black/90 backdrop-blur-sm py-3 shadow-lg' : 'bg-gradient-to-b from-black/80 to-transparent py-5'
+          scrolled ? 'bg-netflix-black/90 backdrop-blur-sm shadow-lg' : 'bg-gradient-to-b from-black/80 to-transparent'
         }`}
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="container-custom flex justify-between items-center">
+        <div className="container-custom h-16 flex justify-between items-center"> {/* Altura fixa e centralizada */}
           {/* Logo */}
           <Link to={basePath} className="flex items-center">
             <span className="text-netflix-red font-bold text-3xl">DEV<span className="text-white">FLIX</span></span>
@@ -80,7 +82,7 @@ const Navbar = () => {
               Materiais de Apoio
             </Link>
             
-            {/* Novo botão de chat com IA */}
+            {/* Botão de chat com IA */}
             <button
               onClick={toggleAiModal}
               className="bg-netflix-red hover:bg-red-700 text-white py-1.5 px-4 rounded-md transition-all duration-200 flex items-center space-x-1"

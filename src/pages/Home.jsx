@@ -1,4 +1,4 @@
-// src/pages/Home.jsx (atualização do banner)
+// src/pages/Home.jsx (ajuste de espaçamento)
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import CodeAnimation from '../components/CodeAnimation';
@@ -22,7 +22,8 @@ const Home = () => {
   const basePath = path ? `/${path}` : '';
   
   // Ajuste para o conteúdo principal baseado na presença do banner
-  const contentPaddingTop = (bannerEnabled && bannerVisible) ? 'pt-[120px]' : 'pt-16';
+  // Corrigindo para altura exata do header (16) + banner (60) quando presente
+  const contentPaddingTop = (bannerEnabled && bannerVisible) ? 'pt-[76px]' : 'pt-16';
   
   if (isLoading) {
     return (
