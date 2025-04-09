@@ -15,47 +15,56 @@ export const DevflixProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [bannerVisible, setBannerVisible] = useState(true); // Controle de visibilidade do banner
   
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        setBannerVisible(true); // Reset do estado do banner para cada nova instância
-        
-        if (!path) {
-          // Se não houver path, redireciona para a página de erro
-          navigate('/');
-          return;
-        }
-        
-        let devflixData;
-        
-        try {
-          // Buscar dados diretamente do Firebase
-          devflixData = await getDevflixByPath(path);
-          
-          // Se não encontrou dados, mostra erro
-          if (!devflixData) {
-            throw new Error(`Instância DevFlix "/${path}" não encontrada.`);
-          }
-          
-          setCurrentDevflix(devflixData);
-        } catch (fetchError) {
-          console.error('Erro ao buscar dados:', fetchError);
-          setError(fetchError.message || 'Não foi possível carregar os dados. Por favor, tente novamente.');
-          return;
-        }
-      } catch (err) {
-        console.error('Erro ao carregar dados da DevFlix:', err);
-        setError('Não foi possível carregar os dados. Por favor, tente novamente.');
-      } finally {
-        setIsLoading(false);
+// Modifiy the useEffect hook in DevflixContext.jsx to handle the publication status
+// Modificação no useEffect do DevflixContext.jsx
+
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      setBannerVisible(true); // Reset do estado do banner para cada nova instância
+      
+      if (!path) {
+        // Se não houver path, redirecionar para a página de erro standalone
+        navigate('/');
+        return;
       }
-    };
-    
-    fetchData();
-  }, [path, navigate]);
+      
+      let devflixData;
+      
+      try {
+        // Buscar dados diretamente do Firebase
+        devflixData = await getDevflixByPath(path);
+        
+        // Se não encontrou dados, redireciona para a página de erro standalone
+        if (!devflixData) {
+          navigate(`/error?message=Instância DevFlix "/${path}" não encontrada.&code=404`);
+          return;
+        }
+        
+        // Verificar se a instância está publicada
+        if (devflixData.isPublished === false) {
+          navigate(`/error?message=Instância DevFlix "/${path}" não está disponível no momento.&code=403`);
+          return;
+        }
+        
+        setCurrentDevflix(devflixData);
+      } catch (fetchError) {
+        console.error('Erro ao buscar dados:', fetchError);
+        navigate(`/error?message=${encodeURIComponent(fetchError.message || 'Não foi possível carregar os dados.')}&code=500`);
+        return;
+      }
+    } catch (err) {
+      console.error('Erro ao carregar dados da DevFlix:', err);
+      navigate(`/error?message=${encodeURIComponent('Não foi possível carregar os dados.')}&code=500`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
+  fetchData();
+}, [path, navigate]);
   // Função para controlar a visibilidade do banner
   const toggleBannerVisibility = (visible) => {
     setBannerVisible(visible);

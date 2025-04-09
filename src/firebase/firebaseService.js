@@ -1,4 +1,4 @@
-// src/firebase/firebaseService.js (com duplicação)
+// src/firebase/firebaseService.js
 import { 
   collection, 
   doc, 
@@ -129,17 +129,35 @@ export const addDevflixInstance = async (data) => {
         { classId: '4', items: [] }
       ],
       banner: data.banner || {
-        title: '', // Campo para o título H1
+        title: '',
         text: 'Bem-vindo à DevFlix!',
         buttonText: 'Saiba mais',
         backgroundColor: '#E50914',
         buttonColor: '#141414',
         buttonLink: '#',
-        titleColor: '#ffffff',     // Cor do título
-        textColor: '#ffffff',      // Cor do texto
-        buttonTextColor: '#ffffff' // Cor do texto do botão
+        titleColor: '#ffffff',
+        textColor: '#ffffff',
+        buttonTextColor: '#ffffff',
+        scheduledVisibility: null
       },
-      bannerEnabled: data.bannerEnabled !== undefined ? data.bannerEnabled : false
+      headerLinks: data.headerLinks || [
+        {
+          id: 'link-home',
+          title: 'Home',
+          url: '/',
+          visible: true,
+          order: 0
+        },
+        {
+          id: 'link-materials',
+          title: 'Materiais de Apoio',
+          url: '/materiais',
+          visible: true,
+          order: 1
+        }
+      ],
+      bannerEnabled: data.bannerEnabled !== undefined ? data.bannerEnabled : false,
+      isPublished: data.isPublished !== undefined ? data.isPublished : true
     };
     
     const docRef = await addDoc(devflixCollection, newInstance);
@@ -150,7 +168,7 @@ export const addDevflixInstance = async (data) => {
   }
 };
 
-// Nova função para duplicar uma instância DevFlix
+// Duplicar uma instância DevFlix existente
 export const duplicateDevflixInstance = async (id, newPath, newName) => {
   try {
     // Buscar a instância original
@@ -177,7 +195,26 @@ export const duplicateDevflixInstance = async (id, newPath, newName) => {
       classes: [...originalInstance.classes],
       materials: [...originalInstance.materials],
       banner: {...originalInstance.banner},
-      bannerEnabled: originalInstance.bannerEnabled
+      bannerEnabled: originalInstance.bannerEnabled,
+      headerLinks: originalInstance.headerLinks 
+        ? [...originalInstance.headerLinks] 
+        : [
+            {
+              id: 'link-home',
+              title: 'Home',
+              url: '/',
+              visible: true,
+              order: 0
+            },
+            {
+              id: 'link-materials',
+              title: 'Materiais de Apoio',
+              url: '/materiais',
+              visible: true,
+              order: 1
+            }
+          ],
+      isPublished: false // Por padrão, a instância duplicada não é publicada
     };
     
     const docRef = await addDoc(devflixCollection, duplicatedInstance);
@@ -224,6 +261,36 @@ export const deleteDevflixInstance = async (id) => {
     return true;
   } catch (error) {
     console.error("Erro ao excluir instância DevFlix:", error);
+    throw error;
+  }
+};
+
+// Atualizar links do cabeçalho de uma instância
+export const updateHeaderLinks = async (instanceId, links) => {
+  try {
+    const docRef = doc(devflixCollection, instanceId);
+    await updateDoc(docRef, { 
+      headerLinks: links,
+      updatedAt: serverTimestamp()
+    });
+    return true;
+  } catch (error) {
+    console.error("Erro ao atualizar links do cabeçalho:", error);
+    throw error;
+  }
+};
+
+// Alternar o status de publicação de uma instância
+export const togglePublishStatus = async (instanceId, isPublished) => {
+  try {
+    const docRef = doc(devflixCollection, instanceId);
+    await updateDoc(docRef, { 
+      isPublished: isPublished,
+      updatedAt: serverTimestamp()
+    });
+    return true;
+  } catch (error) {
+    console.error("Erro ao alterar status de publicação:", error);
     throw error;
   }
 };

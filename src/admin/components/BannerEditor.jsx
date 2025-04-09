@@ -1,6 +1,7 @@
-// src/admin/components/BannerEditor.jsx (com cores de texto)
-import { useState, useEffect } from 'react';
+// src/admin/components/BannerEditor.jsx (com correções definitivas para timer)
+import { useState, useEffect, useCallback } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
+import ScheduledUnlockField from './ScheduledUnlockField';
 
 const BannerEditor = () => {
   const { currentDevflix, updateBanner, toggleBanner } = useAdmin();
@@ -14,9 +15,12 @@ const BannerEditor = () => {
   // Estados para cores
   const [backgroundColor, setBackgroundColor] = useState('#ff3f3f');
   const [buttonColor, setButtonColor] = useState('#222222');
-  const [titleColor, setTitleColor] = useState('#ffffff'); // Nova cor para o título
-  const [textColor, setTextColor] = useState('#ffffff');   // Nova cor para o texto
-  const [buttonTextColor, setButtonTextColor] = useState('#ffffff'); // Nova cor para o texto do botão
+  const [titleColor, setTitleColor] = useState('#ffffff'); 
+  const [textColor, setTextColor] = useState('#ffffff');
+  const [buttonTextColor, setButtonTextColor] = useState('#ffffff');
+  
+  // Estado para agendamento
+  const [scheduledVisibility, setScheduledVisibility] = useState(null);
   
   const [isSaving, setIsSaving] = useState(false);
   
@@ -35,14 +39,85 @@ const BannerEditor = () => {
       setTitleColor(currentDevflix.banner?.titleColor || '#ffffff');
       setTextColor(currentDevflix.banner?.textColor || '#ffffff');
       setButtonTextColor(currentDevflix.banner?.buttonTextColor || '#ffffff');
+      
+      // Inicializar agendamento
+      setScheduledVisibility(currentDevflix.banner?.scheduledVisibility || null);
     }
   }, [currentDevflix]);
+  
+  // CORREÇÃO: Implementar função que verifica e atualiza o banner diretamente via Firebase
+  const activateScheduledBanner = useCallback(async () => {
+    if (!currentDevflix || !currentDevflix.id) return;
+    
+    try {
+      // Verificar diretamente no objeto atual se o banner deve ser mostrado
+      const now = new Date().getTime();
+      const scheduledTime = currentDevflix.banner?.scheduledVisibility 
+        ? new Date(currentDevflix.banner.scheduledVisibility).getTime() 
+        : null;
+      
+      console.log("Banner Activation Check:", {
+        now: new Date(now).toLocaleString(),
+        scheduled: scheduledTime ? new Date(scheduledTime).toLocaleString() : 'None',
+        shouldActivate: scheduledTime && scheduledTime <= now && !currentDevflix.bannerEnabled,
+        currentlyEnabled: currentDevflix.bannerEnabled
+      });
+      
+      if (scheduledTime && scheduledTime <= now && !currentDevflix.bannerEnabled) {
+        console.log("ACTIVATING SCHEDULED BANNER NOW!");
+        
+        // CORREÇÃO: Primeiros ativamos o banner
+        await toggleBanner(true);
+        setEnabled(true);
+        
+        // CORREÇÃO: Depois atualizamos o objeto para limpar o agendamento
+        // Isso garante que mesmo que a atualização do objeto falhe, o banner já estará visível
+        await updateBanner({
+          ...currentDevflix.banner,
+          scheduledVisibility: null
+        });
+        
+        setScheduledVisibility(null);
+        
+        console.log("Banner successfully activated!");
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error("Error activating scheduled banner:", error);
+      return false;
+    }
+  }, [currentDevflix, toggleBanner, updateBanner]);
+  
+  // Verificar banner agendado ao carregar e a cada 15 segundos (intervalo reduzido)
+  useEffect(() => {
+    // Verificar imediatamente ao montar o componente
+    activateScheduledBanner();
+    
+    // Depois verificar periodicamente
+    const interval = setInterval(activateScheduledBanner, 15000);
+    
+    // Limpar o intervalo ao desmontar o componente
+    return () => clearInterval(interval);
+  }, [activateScheduledBanner]);
   
   const handleToggleBanner = async () => {
     try {
       const newValue = !enabled;
       setEnabled(newValue);
       await toggleBanner(newValue);
+      
+      // Se estiver desativando, limpar qualquer agendamento
+      if (!newValue && scheduledVisibility) {
+        setScheduledVisibility(null);
+        await updateBanner({
+          ...currentDevflix.banner,
+          scheduledVisibility: null
+        });
+      }
+      
+      console.log(`Banner toggled to: ${newValue ? 'enabled' : 'disabled'}`);
     } catch (error) {
       console.error("Erro ao alternar banner:", error);
       // Reverter o estado em caso de erro
@@ -64,15 +139,37 @@ const BannerEditor = () => {
         buttonLink,
         backgroundColor,
         buttonColor,
-        titleColor,     // Nova cor para o título
-        textColor,      // Nova cor para o texto
-        buttonTextColor // Nova cor para o texto do botão
+        titleColor,     
+        textColor,     
+        buttonTextColor,
+        scheduledVisibility
       };
       
       await updateBanner(bannerData);
       
-      // Se o banner não está habilitado, habilite-o automaticamente
-      if (!enabled) {
+      // CORREÇÃO: Verificar se o banner está programado para aparecimento imediato
+      if (scheduledVisibility) {
+        const scheduledTime = new Date(scheduledVisibility).getTime();
+        const now = new Date().getTime();
+        
+        // Se o horário já passou, habilitar o banner imediatamente
+        if (scheduledTime <= now) {
+          console.log("Scheduled time already passed, enabling banner immediately");
+          setEnabled(true);
+          await toggleBanner(true);
+          
+          // Limpar o agendamento
+          setScheduledVisibility(null);
+          await updateBanner({
+            ...bannerData,
+            scheduledVisibility: null
+          });
+        } else if (!enabled) {
+          // Se tem agendamento futuro e o banner está desabilitado, manter assim
+          console.log("Banner scheduled for future display:", new Date(scheduledTime).toLocaleString());
+        }
+      } else if (!enabled && !scheduledVisibility) {
+        // Se não há agendamento e o banner está desabilitado, habilitar automaticamente
         setEnabled(true);
         await toggleBanner(true);
       }
@@ -84,6 +181,20 @@ const BannerEditor = () => {
     } finally {
       setIsSaving(false);
     }
+  };
+  
+  // Formatar a data de agendamento
+  const formatScheduleDate = (dateString) => {
+    if (!dateString) return 'Não agendado';
+    
+    const date = new Date(dateString);
+    return date.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
   
   // Preview do banner
@@ -192,6 +303,22 @@ const BannerEditor = () => {
             placeholder="https://exemplo.com/promo"
           />
         </div>
+        
+        {/* Programação de visibilidade */}
+        {!enabled && (
+          <div>
+            <label className="block text-gray-400 text-sm mb-1">Programar Exibição</label>
+            <ScheduledUnlockField 
+              scheduledUnlock={scheduledVisibility}
+              onChange={(date) => setScheduledVisibility(date)}
+            />
+            {scheduledVisibility && (
+              <p className="text-xs text-green-500 mt-1">
+                Banner será exibido automaticamente em: {formatScheduleDate(scheduledVisibility)}
+              </p>
+            )}
+          </div>
+        )}
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>

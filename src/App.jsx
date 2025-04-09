@@ -1,4 +1,4 @@
-// src/App.jsx (correção de redirecionamentos)
+// src/App.jsx (updated with error routes)
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Home from './pages/Home';
@@ -7,11 +7,14 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Loading from './components/Loading';
 import ErrorPage from './pages/ErrorPage';
+import ErrorPageStandalone from './pages/ErrorPageStandalone';
+import ErrorRouteHandler from './pages/ErrorRouteHandler';
 
 // Componentes de Admin
 import AdminLayout from './admin/components/AdminLayout';
 import AdminHome from './admin/pages/AdminHome';
 import AdminMaterials from './admin/pages/AdminMaterials';
+import AdminHeaderSettings from './admin/pages/AdminHeaderSettings';
 import AdminSettings from './admin/pages/AdminSettings';
 import Login from './admin/pages/Login';
 import ProtectedRoute from './admin/components/ProtectedRoute';
@@ -20,6 +23,7 @@ import ProtectedRoute from './admin/components/ProtectedRoute';
 import { AdminProvider } from './admin/contexts/AdminContext';
 import { DevflixProvider } from './contexts/DevflixContext';
 import { AuthProvider } from './contexts/AuthContext';
+import SchedulerChecker from './components/SchedulerChecker';
 
 // Componente para simular páginas de aula individuais
 const AulaPage = ({ match }) => {
@@ -77,9 +81,15 @@ function App() {
     <Router>
       <AuthProvider>
         <AdminProvider>
+          {/* Adicionar verificador de agendamentos */}
+          <SchedulerChecker />
+          
           <Routes>
-            {/* Rota raiz - redireciona para página de erro */}
-            <Route path="/" element={<ErrorPage message="Selecione uma DevFlix específica" code="404" />} />
+            {/* Rota raiz - redireciona para página de erro standalone */}
+            <Route path="/" element={<ErrorPageStandalone message="Selecione uma DevFlix específica" code="404" />} />
+            
+            {/* Nova rota para lidar com erros dinamicamente */}
+            <Route path="/error" element={<ErrorRouteHandler />} />
             
             {/* Rota de Login */}
             <Route path="/admin/login" element={<Login />} />
@@ -89,6 +99,7 @@ function App() {
               <Route path="/admin/dev" element={<AdminLayout />}>
                 <Route index element={<AdminHome />} />
                 <Route path="materials" element={<AdminMaterials />} />
+                <Route path="header" element={<AdminHeaderSettings />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
             </Route>
@@ -129,7 +140,7 @@ function App() {
             } />
             
             {/* Rota para redirecionar caminhos não encontrados */}
-            <Route path="*" element={<ErrorPage message="Página não encontrada" code="404" />} />
+            <Route path="*" element={<ErrorPageStandalone message="Página não encontrada" code="404" />} />
           </Routes>
         </AdminProvider>
       </AuthProvider>

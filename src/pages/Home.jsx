@@ -1,7 +1,6 @@
-// src/pages/Home.jsx (ajuste de espaçamento)
+// src/pages/Home.jsx (Netflix-style)
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import CodeAnimation from '../components/CodeAnimation';
 import CourseCard from '../components/CourseCard';
 import PromoBanner from '../components/PromoBanner';
 import { useDevflix } from '../contexts/DevflixContext';
@@ -15,15 +14,15 @@ const Home = () => {
     toggleBannerVisibility, 
     isLoading, 
     error, 
-    path 
+    path,
+    currentDevflix
   } = useDevflix();
   
   // Usa o path do contexto para garantir consistência nas rotas
   const basePath = path ? `/${path}` : '';
   
   // Ajuste para o conteúdo principal baseado na presença do banner
-  // Corrigindo para altura exata do header (16) + banner (60) quando presente
-  const contentPaddingTop = (bannerEnabled && bannerVisible) ? 'pt-[76px]' : 'pt-16';
+  const contentPaddingTop = (bannerEnabled && bannerVisible) ? 'pt-[60px]' : 'pt-0';
   
   if (isLoading) {
     return (
@@ -52,6 +51,14 @@ const Home = () => {
     );
   }
   
+  // Filtrar por categorias (se houver)
+  const featuredClasses = classes.filter(course => course.featured);
+  const regularClasses = classes.filter(course => !course.featured);
+  
+  // Obter o nome do curso ou título da DevFlix
+  const courseTitle = currentDevflix?.title || 'Profissão Gestor de Tráfego';
+  const courseSubtitle = currentDevflix?.subtitle || 'Domine o tráfego pago e transforme sua carreira';
+  
   return (
     <div className={`min-h-screen ${contentPaddingTop}`}>
       {/* Banner promocional */}
@@ -61,76 +68,68 @@ const Home = () => {
         onToggle={toggleBannerVisibility}
       />
       
-      {/* Hero Section */}
-      <section className="relative h-screen">
-        <CodeAnimation />
-        <div className="hero-content text-left px-6 md:px-12 lg:px-20">
-          <div className="flex flex-col md:flex-row items-center md:items-start justify-center w-full gap-8 md:gap-12">
-            {/* Imagem do instrutor */}
-            <div className="relative w-64 md:w-72 lg:w-96 mt-4 md:mt-0 z-20">
-              <img 
-                src="/images/instructor.png" 
-                alt="Instrutor DevClub" 
-                className="w-full h-auto"
-              />
-            </div>
-            
-            {/* Conteúdo de texto */}
-            <div className="max-w-2xl">
-              <motion.h1 
-                className="text-5xl md:text-7xl font-extrabold text-left"
-                initial={{ opacity: 0, y: -50 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-              >
-                <span className="text-white">Programador em</span>
-                <span className="block text-netflix-red">72hrs</span>
-              </motion.h1>
-              <motion.p 
-                className="mt-4 text-xl md:text-2xl text-gray-300 text-left"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.8, delay: 0.5 }}
-              >
-                Aprenda programação do zero e transforme sua carreira em apenas 3 dias
-              </motion.p>
-              <motion.div
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.8 }}
-                className="mt-8 flex flex-wrap gap-4"
-              >
-                <Link to="#cursos" className="btn-primary py-3 px-8 text-lg">
-                  Ver Aulas
+      {/* Hero Section com imagem de fundo e gradientes tipo Netflix */}
+      <div className="relative h-screen w-full bg-netflix-black">
+        {/* Background image with overlay */}
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('/images/instructor.png')" }}>
+          <div className="absolute inset-0 bg-gradient-to-r from-netflix-black via-netflix-black/70 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-netflix-black via-netflix-black/40 to-transparent"></div>
+        </div>
+        
+        {/* Content */}
+        <div className="relative h-full container-custom z-10 flex flex-col justify-center">
+          <div className="max-w-2xl">
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7 }}
+            >
+              <span className="inline-block bg-netflix-red px-3 py-1 text-sm font-bold mb-4">SÉRIE</span>
+              
+              <h1 className="text-5xl md:text-7xl font-bold mb-4">{courseTitle}</h1>
+              
+              <p className="text-xl text-gray-300 mb-8">
+                {courseSubtitle}
+              </p>
+              
+              <div className="flex flex-wrap gap-4">
+                <Link to={`${basePath}/aula/1`} className="btn-primary py-3 px-8 text-lg flex items-center">
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  Assistir Agora
                 </Link>
-                <Link to={`${basePath}/materiais`} className="py-3 px-8 text-lg border border-white hover:bg-white hover:text-netflix-black transition-colors duration-300 rounded">
+                
+                <Link to={`${basePath}/materiais`} className="btn-secondary py-3 px-8 text-lg flex items-center">
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
                   Materiais de Apoio
                 </Link>
-              </motion.div>
-            </div>
+              </div>
+            </motion.div>
           </div>
         </div>
-        <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce">
-          <svg className="w-6 h-6 text-white" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-            <path d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
-          </svg>
-        </div>
-      </section>
+        
+        {/* Gradient fade to content */}
+        <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-netflix-black to-transparent"></div>
+      </div>
 
-      {/* Courses Section */}
-      <section id="cursos" className="py-16 bg-netflix-dark">
+      {/* Courses Section (em estilo Netflix) */}
+      <section className="py-16 bg-netflix-black -mt-32 relative z-10">
         <div className="container-custom">
           <motion.h2 
-            className="text-3xl md:text-4xl font-bold mb-12 border-l-4 border-netflix-red pl-4"
+            className="section-header"
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
           >
-            Aulas Disponíveis
+            Em alta
           </motion.h2>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
             {classes.map((course, index) => (
               <motion.div
                 key={course.id}
@@ -158,6 +157,53 @@ const Home = () => {
               Ver Materiais de Apoio
             </Link>
           </motion.div>
+        </div>
+      </section>
+      
+      {/* About section (for Netflix style, showing information about the course) */}
+      <section className="py-16 bg-netflix-dark">
+        <div className="container-custom">
+          <div className="flex flex-col md:flex-row gap-10">
+            <div className="md:w-2/3">
+              <h2 className="section-header mb-6">Sobre o curso</h2>
+              <p className="text-gray-300 mb-4">
+                Transforme sua carreira aprendendo a gerenciar tráfego pago de forma eficiente. Este curso completo 
+                vai te ensinar tudo o que precisa para se tornar um especialista em gestão de tráfego e aumentar 
+                significativamente seus resultados online.
+              </p>
+              <p className="text-gray-300 mb-4">
+                Aprenda estratégias avançadas de configuração de campanhas, segmentação de audiência, 
+                otimização de conversões e muito mais!
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+                <div className="bg-netflix-black p-4 rounded-md">
+                  <h3 className="text-xl font-bold mb-2">4 Aulas</h3>
+                  <p className="text-gray-400">Conteúdo completo dividido em módulos práticos</p>
+                </div>
+                <div className="bg-netflix-black p-4 rounded-md">
+                  <h3 className="text-xl font-bold mb-2">Materiais Exclusivos</h3>
+                  <p className="text-gray-400">Templates e recursos para implementação imediata</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="md:w-1/3 bg-netflix-black rounded-md overflow-hidden">
+              <img 
+                src="/images/instructor.png" 
+                alt="Instrutor" 
+                className="w-full object-cover h-64"
+              />
+              <div className="p-4">
+                <h3 className="text-xl font-bold mb-1">Seu Instrutor</h3>
+                <p className="text-gray-400 mb-3">Especialista em Tráfego Pago</p>
+                <p className="text-sm text-gray-300">
+                  Com anos de experiência no mercado digital, nosso instrutor já ajudou centenas de empresas 
+                  a escalar seus resultados através do tráfego pago.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </div>

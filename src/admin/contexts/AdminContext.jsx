@@ -15,6 +15,10 @@ import {
   updateClassInfo,
   updateBannerSettings
 } from '../../firebase/firebaseService';
+import { 
+  updateHeaderLinks as updateHeaderLinksInFirebase,
+  togglePublishStatus as togglePublishStatusInFirebase 
+} from '../../firebase/firebaseService';
 
 // Cria o contexto
 const AdminContext = createContext();
@@ -382,6 +386,56 @@ export const AdminProvider = ({ children }) => {
     }
   };
 
+  const updateHeaderLinks = async (links) => {
+    if (!currentDevflix) return;
+    
+    try {
+      // Atualizar no Firebase
+      await updateHeaderLinksInFirebase(currentDevflix.id, links);
+      
+      // Atualizar estado local
+      const updated = { ...currentDevflix, headerLinks: links };
+      setCurrentDevflix(updated);
+      
+      // Atualizar a lista de instâncias
+      setDevflixInstances(prev => prev.map(instance => 
+        instance.id === currentDevflix.id ? updated : instance
+      ));
+      
+      return true;
+    } catch (err) {
+      console.error('Erro ao atualizar links do cabeçalho:', err);
+      setError('Falha ao atualizar links do cabeçalho.');
+      throw err;
+    }
+  };
+  
+  // Função para alternar o status de publicação de uma instância
+  const togglePublishStatus = async (id, isPublished) => {
+    try {
+      // Atualizar no Firebase
+      await togglePublishStatusInFirebase(id, isPublished);
+      
+      // Atualizar estado local
+      const updatedInstances = devflixInstances.map(instance => 
+        instance.id === id ? { ...instance, isPublished } : instance
+      );
+      
+      setDevflixInstances(updatedInstances);
+      
+      // Também atualizar o currentDevflix se necessário
+      if (currentDevflix && currentDevflix.id === id) {
+        setCurrentDevflix(prev => ({ ...prev, isPublished }));
+      }
+      
+      return true;
+    } catch (err) {
+      console.error('Erro ao alterar status de publicação:', err);
+      setError('Falha ao alterar status de publicação.');
+      throw err;
+    }
+  };
+
   const value = {
     devflixInstances,
     currentDevflix,
@@ -398,7 +452,9 @@ export const AdminProvider = ({ children }) => {
     deleteMaterial,
     updateClass,
     updateBanner,
-    toggleBanner
+    toggleBanner,
+    updateHeaderLinks,
+    togglePublishStatus
   };
 
   return (

@@ -1,4 +1,4 @@
-// src/components/Navbar.jsx (correção alinhamento)
+// src/components/Navbar.jsx (com links fixos)
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,8 +11,19 @@ const Navbar = () => {
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const location = useLocation();
   
-  // Obtém informações do banner do contexto DevFlix
-  const { bannerEnabled, bannerVisible } = useDevflix();
+  // Obtém informações do contexto DevFlix
+  const { bannerEnabled, bannerVisible, currentDevflix } = useDevflix();
+  
+  // Obter links do header dinamicamente
+  const headerLinks = currentDevflix?.headerLinks || [];
+  
+  // Filtrar apenas links visíveis que não sejam os fixos
+  const visibleCustomLinks = headerLinks.filter(link => 
+    link.visible && 
+    link.id !== 'link-home' && 
+    link.id !== 'link-materials' &&
+    link.id !== 'link-ai'
+  ).sort((a, b) => a.order - b.order);
   
   useEffect(() => {
     const handleScroll = () => {
@@ -43,10 +54,61 @@ const Navbar = () => {
   const basePath = pathSegments.length > 0 ? `/${pathSegments[0]}` : '';
   
   // Ajustar posição do navbar baseado na presença do banner
-  // Mudança: Removendo o espaçamento estranho entre o banner e o navbar
   const navbarPosition = (bannerEnabled && bannerVisible) ? 'top-[60px]' : 'top-0';
   
-  // Alterando classes para melhorar o alinhamento vertical
+  // Função para renderizar links personalizados
+  const renderCustomLinks = (isMobile = false) => {
+    return visibleCustomLinks.map(link => {
+      // Determinar se o link é externo
+      const isExternal = link.url.startsWith('http');
+      
+      // Se a URL começa com /, e não com //, mantém o caminho relativo
+      // caso contrário, adiciona o basePath no início
+      const finalUrl = link.url.startsWith('/') && !link.url.startsWith('//') 
+        ? (link.url === '/' ? basePath : `${basePath}${link.url}`)
+        : link.url;
+      
+      // Verificar se o link está ativo
+      const isActive = link.url === '/' 
+        ? location.pathname === basePath
+        : location.pathname.includes(link.url);
+      
+      if (isExternal) {
+        return (
+          <a 
+            key={link.id}
+            href={link.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`hover:text-netflix-red transition-colors ${
+              isMobile ? 'block py-2' : ''
+            } text-white`}
+            onClick={isMobile ? () => setMenuOpen(false) : undefined}
+          >
+            {link.title}
+          </a>
+        );
+      }
+      
+      return (
+        <Link 
+          key={link.id}
+          to={finalUrl}
+          className={`hover:text-netflix-red transition-colors ${
+            isActive ? 'text-netflix-red font-medium' : 'text-white'
+          } ${isMobile ? 'block py-2' : ''}`}
+          onClick={isMobile ? () => setMenuOpen(false) : undefined}
+        >
+          {link.title}
+        </Link>
+      );
+    });
+  };
+  
+  // Verificar se link está fixo ou não
+  const isHomeLinkActive = location.pathname === basePath;
+  const isMaterialsLinkActive = location.pathname.includes('/materiais');
+  
   return (
     <>
       <motion.nav 
@@ -57,7 +119,7 @@ const Navbar = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="container-custom h-16 flex justify-between items-center"> {/* Altura fixa e centralizada */}
+        <div className="container-custom h-16 flex justify-between items-center">
           {/* Logo */}
           <Link to={basePath} className="flex items-center">
             <span className="text-netflix-red font-bold text-3xl">DEV<span className="text-white">FLIX</span></span>
@@ -65,24 +127,29 @@ const Navbar = () => {
           
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-8">
+            {/* Links fixos + links personalizados */}
             <Link 
               to={basePath} 
               className={`hover:text-netflix-red transition-colors ${
-                location.pathname === basePath ? 'text-netflix-red font-medium' : 'text-white'
+                isHomeLinkActive ? 'text-netflix-red font-medium' : 'text-white'
               }`}
             >
               Home
             </Link>
+            
             <Link 
               to={`${basePath}/materiais`} 
               className={`hover:text-netflix-red transition-colors ${
-                location.pathname.includes('/materiais') ? 'text-netflix-red font-medium' : 'text-white'
+                isMaterialsLinkActive ? 'text-netflix-red font-medium' : 'text-white'
               }`}
             >
               Materiais de Apoio
             </Link>
             
-            {/* Botão de chat com IA */}
+            {/* Links personalizados */}
+            {renderCustomLinks()}
+            
+            {/* Botão de chat com IA (sempre visível) */}
             <button
               onClick={toggleAiModal}
               className="bg-netflix-red hover:bg-red-700 text-white py-1.5 px-4 rounded-md transition-all duration-200 flex items-center space-x-1"
@@ -133,24 +200,29 @@ const Navbar = () => {
               transition={{ duration: 0.3 }}
             >
               <div className="container-custom py-4 space-y-4">
+                {/* Links fixos para mobile */}
                 <Link 
                   to={basePath} 
                   className={`block py-2 ${
-                    location.pathname === basePath ? 'text-netflix-red font-medium' : 'text-white'
+                    isHomeLinkActive ? 'text-netflix-red font-medium' : 'text-white'
                   }`}
                   onClick={() => setMenuOpen(false)}
                 >
                   Home
                 </Link>
+                
                 <Link 
                   to={`${basePath}/materiais`} 
                   className={`block py-2 ${
-                    location.pathname.includes('/materiais') ? 'text-netflix-red font-medium' : 'text-white'
+                    isMaterialsLinkActive ? 'text-netflix-red font-medium' : 'text-white'
                   }`}
                   onClick={() => setMenuOpen(false)}
                 >
                   Materiais de Apoio
                 </Link>
+                
+                {/* Links personalizados para mobile */}
+                {renderCustomLinks(true)}
               </div>
             </motion.div>
           )}

@@ -1,9 +1,10 @@
-// src/admin/components/MaterialsEditor.jsx (correção completa)
-import { useState, useEffect } from 'react';
+// src/admin/components/MaterialsEditor.jsx (correção agendamento)
+import { useState, useEffect, useCallback } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
+import ScheduledUnlockField from './ScheduledUnlockField';
 
 const MaterialsEditor = () => {
-  const { currentDevflix, addMaterial, updateMaterial, deleteMaterial } = useAdmin();
+  const { currentDevflix, addMaterial, updateMaterial, deleteMaterial, updateMaterials } = useAdmin();
   const [selectedClassId, setSelectedClassId] = useState('');
   const [materials, setMaterials] = useState([]);
   const [editingId, setEditingId] = useState(null);
@@ -15,6 +16,7 @@ const MaterialsEditor = () => {
   const [formUrl, setFormUrl] = useState('');
   const [formType, setFormType] = useState('slides');
   const [formLocked, setFormLocked] = useState(false);
+  const [formScheduledUnlock, setFormScheduledUnlock] = useState(null);
   
   // Tipos de materiais disponíveis
   const materialTypes = [
@@ -45,11 +47,73 @@ const MaterialsEditor = () => {
     }
   }, [currentDevflix, selectedClassId]);
   
+  // CORREÇÃO: Implementar verificação de agendamento como useCallback para evitar dependência circular
+  const checkScheduledMaterials = useCallback(async () => {
+    if (!materials.length || !selectedClassId) return;
+    
+    const now = new Date().getTime();
+    const materialsToUnlock = materials.filter(material => 
+      material.locked && 
+      material.scheduledUnlock && 
+      new Date(material.scheduledUnlock).getTime() <= now
+    );
+    
+    // Se houver materiais para desbloquear
+    if (materialsToUnlock.length > 0) {
+      console.log(`Found ${materialsToUnlock.length} materials to unlock:`, 
+        materialsToUnlock.map(m => m.title));
+      
+      // Criar cópia atualizada dos materiais
+      const updatedItems = materials.map(item => {
+        if (
+          item.locked && 
+          item.scheduledUnlock && 
+          new Date(item.scheduledUnlock).getTime() <= now
+        ) {
+          return {
+            ...item, 
+            locked: false,
+            scheduledUnlock: null // Limpar o agendamento após desbloquear
+          };
+        }
+        return item;
+      });
+      
+      try {
+        // Atualizar no Firebase
+        await updateMaterials(selectedClassId, updatedItems);
+        
+        // Atualizar o estado local
+        setMaterials(updatedItems);
+        
+        console.log("Materials successfully unlocked");
+        return true;
+      } catch (error) {
+        console.error('Erro ao atualizar materiais agendados:', error);
+        return false;
+      }
+    }
+    
+    return false;
+  }, [materials, selectedClassId, updateMaterials]);
+  
+  // Verificar materiais agendados ao carregar e a cada 15 segundos
+  useEffect(() => {
+    // Verificar imediatamente
+    checkScheduledMaterials();
+    
+    // E depois a cada 15 segundos
+    const interval = setInterval(checkScheduledMaterials, 15000);
+    
+    return () => clearInterval(interval);
+  }, [checkScheduledMaterials]);
+  
   const resetForm = () => {
     setFormTitle('');
     setFormUrl('');
     setFormType('slides');
     setFormLocked(false);
+    setFormScheduledUnlock(null);
     setEditingId(null);
   };
   
@@ -65,6 +129,7 @@ const MaterialsEditor = () => {
     setFormUrl(material.url);
     setFormType(material.type);
     setFormLocked(material.locked);
+    setFormScheduledUnlock(material.scheduledUnlock || null);
   };
   
   const handleSubmit = async (e) => {
@@ -72,11 +137,28 @@ const MaterialsEditor = () => {
     setIsSubmitting(true);
     
     try {
+      // CORREÇÃO: Verificar se a data de agendamento já passou
+      let effectiveLocked = formLocked;
+      let effectiveScheduledUnlock = formScheduledUnlock;
+      
+      if (formLocked && formScheduledUnlock) {
+        const scheduledTime = new Date(formScheduledUnlock).getTime();
+        const now = new Date().getTime();
+        
+        // Se o horário já passou, desbloquear imediatamente
+        if (scheduledTime <= now) {
+          console.log("Scheduled time already passed, unlocking material immediately");
+          effectiveLocked = false;
+          effectiveScheduledUnlock = null;
+        }
+      }
+      
       const materialData = {
         title: formTitle,
         url: formUrl,
         type: formType,
-        locked: formLocked
+        locked: effectiveLocked,
+        scheduledUnlock: effectiveScheduledUnlock
       };
       
       if (editingId) {
@@ -136,6 +218,31 @@ const MaterialsEditor = () => {
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={icon}></path>
       </svg>
     );
+  };
+  
+  // Função utilitária para formatar a data
+  const formatScheduleDate = (dateString) => {
+    if (!dateString) return 'Não agendado';
+    
+    const date = new Date(dateString);
+    return date.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+  
+  // Verificar se uma data de agendamento está próxima (menos de 5 minutos)
+  const isScheduleSoon = (dateString) => {
+    if (!dateString) return false;
+    
+    const scheduledTime = new Date(dateString).getTime();
+    const now = new Date().getTime();
+    const fiveMinutes = 5 * 60 * 1000; // 5 minutos em milissegundos
+    
+    return scheduledTime - now <= fiveMinutes && scheduledTime > now;
   };
   
   if (!currentDevflix) {
@@ -247,6 +354,17 @@ const MaterialsEditor = () => {
               </div>
             </div>
             
+            {/* Programação de liberação automática */}
+            {formLocked && (
+              <div>
+                <label className="block text-gray-400 text-sm mb-1">Liberação Programada</label>
+                <ScheduledUnlockField 
+                  scheduledUnlock={formScheduledUnlock}
+                  onChange={(date) => setFormScheduledUnlock(date)}
+                />
+              </div>
+            )}
+            
             <div className="flex justify-end space-x-3 pt-2">
               <button
                 type="button"
@@ -277,7 +395,9 @@ const MaterialsEditor = () => {
           {materials.map((material) => (
             <div 
               key={material.id} 
-              className="flex items-center justify-between bg-netflix-black p-3 rounded-md border border-gray-800 hover:border-gray-700 transition-colors"
+              className={`flex items-center justify-between bg-netflix-black p-3 rounded-md border ${
+                isScheduleSoon(material.scheduledUnlock) ? 'border-yellow-500' : 'border-gray-800'
+              } hover:border-gray-700 transition-colors`}
             >
               <div className="flex items-center">
                 <div className={`flex items-center justify-center w-10 h-10 rounded-full ${
@@ -294,6 +414,19 @@ const MaterialsEditor = () => {
                 <div>
                   <h4 className="text-white font-medium">{material.title}</h4>
                   <p className="text-gray-400 text-sm truncate max-w-md">{material.url}</p>
+                  
+                  {/* Mostrar informações de agendamento */}
+                  {material.locked && material.scheduledUnlock && (
+                    <p className={`text-xs mt-1 ${
+                      isScheduleSoon(material.scheduledUnlock) ? 'text-yellow-500' : 'text-green-500'
+                    }`}>
+                      <svg className="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                      </svg>
+                      Liberação programada: {formatScheduleDate(material.scheduledUnlock)}
+                      {isScheduleSoon(material.scheduledUnlock) && ' (em breve)'}
+                    </p>
+                  )}
                 </div>
               </div>
               
