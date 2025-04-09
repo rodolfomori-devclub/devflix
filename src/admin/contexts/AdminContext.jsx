@@ -1,12 +1,16 @@
-// src/admin/contexts/AdminContext.jsx (correção Firebase)
+// src/admin/contexts/AdminContext.jsx (com duplicação)
 import { createContext, useContext, useState, useEffect } from 'react';
-import { generateId } from '../utils/adminHelpers';
+import { 
+  generateId, 
+  getDefaultDevflix
+} from '../utils/adminHelpers';
 import { 
   getAllDevflixInstances, 
   getDevflixById, 
   addDevflixInstance as addDevflixToFirebase, 
   updateDevflixInstance as updateDevflixInFirebase, 
   deleteDevflixInstance as deleteDevflixFromFirebase,
+  duplicateDevflixInstance as duplicateDevflixInFirebase,
   updateClassMaterials,
   updateClassInfo,
   updateBannerSettings
@@ -65,6 +69,33 @@ export const AdminProvider = ({ children }) => {
     } catch (err) {
       console.error('Erro ao adicionar instância:', err);
       setError('Falha ao adicionar instância. Verifique se o caminho é único.');
+      throw err;
+    }
+  };
+
+  // Nova função para duplicar uma instância DevFlix
+  const duplicateDevflixInstance = async (id, newPath, newName) => {
+    try {
+      setIsLoading(true);
+      
+      // Duplicar a instância no Firebase
+      const newId = await duplicateDevflixInFirebase(id, newPath, newName);
+      
+      // Buscar a instância completa
+      const duplicatedInstance = await getDevflixById(newId);
+      
+      // Atualizar estado local
+      setDevflixInstances(prev => [...prev, duplicatedInstance]);
+      
+      // Selecionar a nova instância
+      setCurrentDevflix(duplicatedInstance);
+      
+      setIsLoading(false);
+      return newId;
+    } catch (err) {
+      console.error('Erro ao duplicar instância:', err);
+      setError('Falha ao duplicar instância. Verifique se o caminho é único.');
+      setIsLoading(false);
       throw err;
     }
   };
@@ -358,6 +389,7 @@ export const AdminProvider = ({ children }) => {
     error,
     selectDevflix,
     addDevflixInstance,
+    duplicateDevflixInstance,  // Nova função para duplicar
     updateDevflixInstance,
     deleteDevflixInstance,
     updateMaterials,

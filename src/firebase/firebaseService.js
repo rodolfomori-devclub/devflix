@@ -1,4 +1,4 @@
-// src/firebase/firebaseService.js (atualização para cores de texto)
+// src/firebase/firebaseService.js (com duplicação)
 import { 
   collection, 
   doc, 
@@ -146,6 +146,44 @@ export const addDevflixInstance = async (data) => {
     return docRef.id;
   } catch (error) {
     console.error("Erro ao adicionar instância DevFlix:", error);
+    throw error;
+  }
+};
+
+// Nova função para duplicar uma instância DevFlix
+export const duplicateDevflixInstance = async (id, newPath, newName) => {
+  try {
+    // Buscar a instância original
+    const originalInstance = await getDevflixById(id);
+    
+    if (!originalInstance) {
+      throw new Error("Instância original não encontrada");
+    }
+    
+    // Verificar se o path já existe
+    const q = query(devflixCollection, where("path", "==", newPath));
+    const snapshot = await getDocs(q);
+    
+    if (!snapshot.empty) {
+      throw new Error(`O caminho '${newPath}' já está em uso.`);
+    }
+    
+    // Criar uma nova instância com base na original
+    const duplicatedInstance = {
+      name: newName,
+      path: newPath,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      classes: [...originalInstance.classes],
+      materials: [...originalInstance.materials],
+      banner: {...originalInstance.banner},
+      bannerEnabled: originalInstance.bannerEnabled
+    };
+    
+    const docRef = await addDoc(devflixCollection, duplicatedInstance);
+    return docRef.id;
+  } catch (error) {
+    console.error("Erro ao duplicar instância DevFlix:", error);
     throw error;
   }
 };

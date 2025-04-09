@@ -28,6 +28,31 @@ body {
   .container-custom {
     @apply container mx-auto px-4 md:px-8;
   }
+
+  /* Estilos para o modal de chat com IA */
+  .modal-container {
+    @apply fixed inset-0 z-50 flex items-center justify-center;
+  }
+
+  .modal-overlay {
+    @apply absolute inset-0 bg-black/80;
+  }
+
+  .modal-content {
+    @apply relative bg-netflix-dark rounded-lg overflow-hidden shadow-2xl w-11/12 md:w-4/5 h-[80vh] max-w-4xl z-10;
+  }
+
+  .modal-header {
+    @apply flex justify-between items-center p-4 bg-netflix-black border-b border-gray-800;
+  }
+
+  .modal-body {
+    @apply w-full h-[calc(100%-60px)];
+  }
+
+  .modal-iframe {
+    @apply w-full h-full border-0;
+  }
 }
 
 @keyframes code-scroll-left {

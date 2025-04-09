@@ -1,13 +1,17 @@
-// src/admin/components/DevflixCard.jsx
+// src/admin/components/DevflixCard.jsx (com duplicação)
 import { useState } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 
 const DevflixCard = ({ instance, onSelect, isSelected }) => {
-  const { updateDevflixInstance, deleteDevflixInstance } = useAdmin();
+  const { updateDevflixInstance, deleteDevflixInstance, duplicateDevflixInstance } = useAdmin();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(instance.name);
   const [path, setPath] = useState(instance.path);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [showDuplicateForm, setShowDuplicateForm] = useState(false);
+  const [duplicateName, setDuplicateName] = useState(`${instance.name} (cópia)`);
+  const [duplicatePath, setDuplicatePath] = useState(`${instance.path}-copy`);
+  const [isDuplicating, setIsDuplicating] = useState(false);
 
   const handleSave = () => {
     // Validar o caminho
@@ -24,6 +28,26 @@ const DevflixCard = ({ instance, onSelect, isSelected }) => {
   const handleDelete = () => {
     deleteDevflixInstance(instance.id);
     setShowConfirmDelete(false);
+  };
+  
+  const handleDuplicate = async () => {
+    // Validar o caminho
+    const pathPattern = /^[a-z0-9\-]+$/;
+    if (!pathPattern.test(duplicatePath)) {
+      alert('O caminho deve conter apenas letras minúsculas, números e hífen.');
+      return;
+    }
+    
+    try {
+      setIsDuplicating(true);
+      await duplicateDevflixInstance(instance.id, duplicatePath, duplicateName);
+      setShowDuplicateForm(false);
+      alert(`DevFlix "${instance.name}" duplicada com sucesso como "${duplicateName}"!`);
+    } catch (error) {
+      alert(`Erro ao duplicar: ${error.message}`);
+    } finally {
+      setIsDuplicating(false);
+    }
   };
 
   return (
@@ -70,6 +94,49 @@ const DevflixCard = ({ instance, onSelect, isSelected }) => {
               </button>
             </div>
           </div>
+        ) : showDuplicateForm ? (
+          <div className="space-y-4">
+            <h3 className="text-xl font-bold text-white mb-2">Duplicar DevFlix</h3>
+            <div>
+              <label className="block text-gray-400 text-sm mb-1">Nome da Cópia</label>
+              <input 
+                type="text"
+                value={duplicateName}
+                onChange={(e) => setDuplicateName(e.target.value)}
+                className="w-full bg-netflix-black border border-gray-700 rounded px-3 py-2 text-white focus:border-netflix-red focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-400 text-sm mb-1">Caminho da Cópia</label>
+              <div className="flex items-center">
+                <span className="text-gray-500 mr-1">/</span>
+                <input 
+                  type="text"
+                  value={duplicatePath}
+                  onChange={(e) => setDuplicatePath(e.target.value)}
+                  className="flex-1 bg-netflix-black border border-gray-700 rounded px-3 py-2 text-white focus:border-netflix-red focus:outline-none"
+                  placeholder="dev-xx-copy"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Apenas letras minúsculas, números e hífen.</p>
+            </div>
+            <div className="flex justify-between mt-4">
+              <button
+                onClick={() => setShowDuplicateForm(false)}
+                className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors"
+                disabled={isDuplicating}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDuplicate}
+                className={`px-4 py-2 ${isDuplicating ? 'bg-gray-600' : 'bg-netflix-red hover:bg-red-700'} text-white rounded transition-colors`}
+                disabled={isDuplicating}
+              >
+                {isDuplicating ? 'Duplicando...' : 'Duplicar'}
+              </button>
+            </div>
+          </div>
         ) : (
           <>
             <div className="flex justify-between items-start">
@@ -79,6 +146,15 @@ const DevflixCard = ({ instance, onSelect, isSelected }) => {
               </div>
               
               <div className="flex space-x-2">
+                <button 
+                  onClick={() => setShowDuplicateForm(true)}
+                  className="p-1.5 bg-gray-700 rounded-full hover:bg-indigo-600 transition-colors text-gray-300"
+                  title="Duplicar"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                  </svg>
+                </button>
                 <button 
                   onClick={() => setIsEditing(true)}
                   className="p-1.5 bg-gray-700 rounded-full hover:bg-gray-600 transition-colors text-gray-300"

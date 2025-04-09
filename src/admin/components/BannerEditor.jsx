@@ -193,7 +193,7 @@ const BannerEditor = () => {
           />
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-gray-400 text-sm mb-1">Cor do Fundo</label>
             <div className="flex">
@@ -207,7 +207,7 @@ const BannerEditor = () => {
                 type="text"
                 value={backgroundColor}
                 onChange={(e) => setBackgroundColor(e.target.value)}
-                className="flex-1 bg-netflix-black border border-gray-700 rounded-r px-3 py-2 text-white focus:border-netflix-red focus:outline-none"
+                className="w-1 flex-1 bg-netflix-black border border-gray-700 rounded-r px-3 py-2 text-white focus:border-netflix-red focus:outline-none"
               />
             </div>
           </div>
@@ -225,7 +225,7 @@ const BannerEditor = () => {
                 type="text"
                 value={buttonColor}
                 onChange={(e) => setButtonColor(e.target.value)}
-                className="flex-1 bg-netflix-black border border-gray-700 rounded-r px-3 py-2 text-white focus:border-netflix-red focus:outline-none"
+                className="w-1 flex-1 bg-netflix-black border border-gray-700 rounded-r px-3 py-2 text-white focus:border-netflix-red focus:outline-none"
               />
             </div>
           </div>
@@ -243,7 +243,7 @@ const BannerEditor = () => {
                 type="text"
                 value={buttonTextColor}
                 onChange={(e) => setButtonTextColor(e.target.value)}
-                className="flex-1 bg-netflix-black border border-gray-700 rounded-r px-3 py-2 text-white focus:border-netflix-red focus:outline-none"
+                className="w-1 flex-1 bg-netflix-black border border-gray-700 rounded-r px-3 py-2 text-white focus:border-netflix-red focus:outline-none"
               />
             </div>
           </div>
@@ -263,7 +263,7 @@ const BannerEditor = () => {
                 type="text"
                 value={titleColor}
                 onChange={(e) => setTitleColor(e.target.value)}
-                className="flex-1 bg-netflix-black border border-gray-700 rounded-r px-3 py-2 text-white focus:border-netflix-red focus:outline-none"
+                className="w-1 flex-1 bg-netflix-black border border-gray-700 rounded-r px-3 py-2 text-white focus:border-netflix-red focus:outline-none"
               />
             </div>
           </div>
@@ -281,7 +281,7 @@ const BannerEditor = () => {
                 type="text"
                 value={textColor}
                 onChange={(e) => setTextColor(e.target.value)}
-                className="flex-1 bg-netflix-black border border-gray-700 rounded-r px-3 py-2 text-white focus:border-netflix-red focus:outline-none"
+                className="w-1 flex-1 bg-netflix-black border border-gray-700 rounded-r px-3 py-2 text-white focus:border-netflix-red focus:outline-none"
               />
             </div>
           </div>
