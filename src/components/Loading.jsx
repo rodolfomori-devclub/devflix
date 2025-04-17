@@ -1,17 +1,33 @@
-// src/components/Loading.jsx
+// src/components/Loading.jsx - Improved loading component
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
 const Loading = () => {
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
   
   useEffect(() => {
-    // Simula o tempo de carregamento
+    // Simulate progressive loading to give user feedback
+    const interval = setInterval(() => {
+      setLoadingProgress(prev => {
+        // Progress slowly up to 90%, then wait for actual loading to complete
+        if (prev < 90) {
+          return prev + (90 - prev) / 10;
+        }
+        return prev;
+      });
+    }, 200);
+    
+    // Simulate completion time - in a real app, this would be based on actual loading
     const timer = setTimeout(() => {
-      setIsVisible(false);
+      setLoadingProgress(100);
+      setTimeout(() => setIsVisible(false), 500); // Fade out after reaching 100%
     }, 2500);
     
-    return () => clearTimeout(timer);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timer);
+    };
   }, []);
   
   if (!isVisible) return null;
@@ -33,34 +49,22 @@ const Loading = () => {
         <span className="text-netflix-red font-bold text-5xl">DEV<span className="text-white">FLIX</span></span>
       </motion.div>
       
-      <div className="w-24 h-24 relative">
+      <div className="w-64 h-1 bg-gray-800 rounded-full overflow-hidden mb-4">
         <motion.div 
-          className="absolute inset-0 border-t-4 border-netflix-red rounded-full"
-          animate={{ rotate: 360 }}
-          transition={{ 
-            duration: 1.5, 
-            repeat: Infinity, 
-            ease: "linear" 
-          }}
-        />
-        <motion.div 
-          className="absolute inset-2 border-r-4 border-white/30 rounded-full"
-          animate={{ rotate: -360 }}
-          transition={{ 
-            duration: 2, 
-            repeat: Infinity, 
-            ease: "linear" 
-          }}
+          className="h-full bg-netflix-red"
+          initial={{ width: '0%' }}
+          animate={{ width: `${loadingProgress}%` }}
+          transition={{ duration: 0.3 }}
         />
       </div>
       
       <motion.p 
-        className="mt-6 text-gray-400"
+        className="text-gray-400"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
       >
-        Carregando conteúdo...
+        Carregando conteúdo... {Math.round(loadingProgress)}%
       </motion.p>
     </motion.div>
   );

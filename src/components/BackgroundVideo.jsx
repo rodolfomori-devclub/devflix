@@ -1,38 +1,64 @@
-// src/components/BackgroundVideo.jsx
+// src/components/BackgroundVideo.jsx - Optimized version
 import { useEffect, useRef, useState } from 'react';
 
 const BackgroundVideo = ({ videoSrc, fallbackImageSrc, children, overlay = true, darken = true }) => {
   const videoRef = useRef(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [isVideoStarted, setIsVideoStarted] = useState(false);
 
+  // Load video only after component mounts to prevent initial loading delay
   useEffect(() => {
-    const videoElement = videoRef.current;
+    let videoElement = null;
     
-    if (!videoElement) return;
-    
-    const handleCanPlay = () => {
-      setIsLoaded(true);
-    };
-    
-    const handleError = () => {
-      console.error("Error loading video");
-      setHasError(true);
-    };
-    
-    videoElement.addEventListener('canplay', handleCanPlay);
-    videoElement.addEventListener('error', handleError);
+    // Small delay to ensure page renders first
+    const loadVideoTimer = setTimeout(() => {
+      videoElement = videoRef.current;
+      
+      if (!videoElement) return;
+      
+      // Add event listeners
+      const handleCanPlay = () => {
+        setIsLoaded(true);
+      };
+      
+      const handlePlaying = () => {
+        setIsVideoStarted(true);
+      };
+      
+      const handleError = (e) => {
+        console.error("Error loading video:", e);
+        setHasError(true);
+      };
+      
+      videoElement.addEventListener('canplay', handleCanPlay);
+      videoElement.addEventListener('playing', handlePlaying);
+      videoElement.addEventListener('error', handleError);
+      
+      // Set source after events to avoid blocking page load
+      if (videoElement.getAttribute('data-src')) {
+        videoElement.src = videoElement.getAttribute('data-src');
+        videoElement.load();
+      }
+      
+      return () => {
+        if (videoElement) {
+          videoElement.removeEventListener('canplay', handleCanPlay);
+          videoElement.removeEventListener('playing', handlePlaying);
+          videoElement.removeEventListener('error', handleError);
+        }
+      };
+    }, 500); // Delay video loading by 500ms
     
     return () => {
-      videoElement.removeEventListener('canplay', handleCanPlay);
-      videoElement.removeEventListener('error', handleError);
+      clearTimeout(loadVideoTimer);
     };
   }, []);
 
   return (
     <div className="relative w-full h-full overflow-hidden">
       {/* Fallback image shown while video loads or if there's an error */}
-      {(!isLoaded || hasError) && fallbackImageSrc && (
+      {(!isVideoStarted || hasError) && fallbackImageSrc && (
         <div 
           className="absolute inset-0 bg-cover bg-center transition-opacity duration-700"
           style={{ 
@@ -42,18 +68,19 @@ const BackgroundVideo = ({ videoSrc, fallbackImageSrc, children, overlay = true,
         />
       )}
       
-      {/* Video background */}
+      {/* Video background - using data-src to defer loading */}
       {!hasError && (
         <video
           ref={videoRef}
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${isVideoStarted ? 'opacity-100' : 'opacity-0'}`}
           autoPlay
-          loop
           muted
           playsInline
+          loop
+          data-src={videoSrc}
+          preload="none"
         >
-          <source src={videoSrc} type="video/mp4" />
-          Your browser does not support the video tag.
+          {/* No source here - will be set via JS after component mounts */}
         </video>
       )}
       

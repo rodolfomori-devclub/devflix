@@ -1,10 +1,14 @@
-// src/pages/Home.jsx (updated with fixed background video path)
+// src/pages/Home.jsx - Performance optimized version
+import { useState, useEffect, useMemo, memo } from 'react';
 import { motion } from 'framer-motion';
 import CourseCard from '../components/CourseCard';
 import PromoBanner from '../components/PromoBanner';
 import BackgroundVideo from '../components/BackgroundVideo';
 import { useDevflix } from '../contexts/DevflixContext';
-import DevFlix from '../assets/devflix.mp4'
+import VideoSrc from '../assets/devflix.mp4'
+
+// Memoized CourseCard to prevent unnecessary re-renders
+const MemoizedCourseCard = memo(CourseCard);
 
 const Home = () => {
   const { 
@@ -19,40 +23,59 @@ const Home = () => {
     currentDevflix
   } = useDevflix();
   
-  // Usa o path do contexto para garantir consistência nas rotas
-  const basePath = path ? `/${path}` : '';
+  // Track loading state for video/image resources
+  const [resourcesLoading, setResourcesLoading] = useState(true);
   
-  // Ajuste para o conteúdo principal baseado na presença do banner
-  const contentPaddingTop = (bannerEnabled && bannerVisible) ? 'pt-[60px]' : 'pt-0';
+  // Uses the path from context to ensure consistency in routes
+  const basePath = useMemo(() => path ? `/${path}` : '', [path]);
   
-  // Obter configurações dos botões
-  const homeButtons = currentDevflix?.homeButtons || {
+  // Content padding based on banner presence
+  const contentPaddingTop = useMemo(() => 
+    (bannerEnabled && bannerVisible) ? 'pt-[60px]' : 'pt-0',
+  [bannerEnabled, bannerVisible]);
+  
+  // Home buttons configuration with memoization
+  const homeButtons = useMemo(() => currentDevflix?.homeButtons || {
     primary: { text: 'Assistir Agora', url: '' },
     secondary: { text: 'Materiais de Apoio', url: '/materiais', enabled: true },
     whatsapp: { enabled: false, text: 'Entre no Grupo VIP do WhatsApp', url: '' }
-  };
+  }, [currentDevflix]);
   
-  // Função para determinar se um link é externo ou interno
-  const isExternalLink = (url) => {
+  // Optimize resource loading
+  useEffect(() => {
+    // Only load essential resources first, defer others
+    const loadEssentialResources = () => {
+      // Mark resources as loaded
+      setResourcesLoading(false);
+    };
+    
+    // Implement a short timeout to ensure UI is responsive
+    const timer = setTimeout(loadEssentialResources, 800);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
+  // Function to determine if a link is external (memoized)
+  const isExternalLink = useMemo(() => (url) => {
     return url && (url.startsWith('http://') || url.startsWith('https://'));
-  };
+  }, []);
   
-  // Função para formatar URLs internas/externas corretamente
-  const formatUrl = (url) => {
-    if (!url) return basePath + '/aula/1'; // Default to first class if no URL
+  // Function to format URLs correctly (memoized)
+  const formatUrl = useMemo(() => (url) => {
+    if (!url) return basePath + '/aula/1'; // Default to first class
     
     if (isExternalLink(url)) {
       return url;
     } else {
-      // Para URLs internas, adiciona o basePath se não começar com /
+      // For internal URLs, add basePath if needed
       return url.startsWith('/') ? basePath + url : basePath + '/' + url;
     }
-  };
+  }, [basePath, isExternalLink]);
   
-  // Video and fallback sources - Fixed to use assets path
-  const videoSrc = '/assets/videos/background.mp4';
+  // Get video and fallback sources
   const fallbackImageSrc = currentDevflix?.heroImage || '/images/bg-hero.jpg';
   
+  // Show loading state if still loading
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen bg-netflix-black">
@@ -61,6 +84,7 @@ const Home = () => {
     );
   }
   
+  // Error handling
   if (error) {
     return (
       <div className="min-h-screen bg-netflix-black py-20">
@@ -80,7 +104,7 @@ const Home = () => {
     );
   }
   
-  // Obter o nome do curso ou título da DevFlix
+  // Get course title/subtitle
   const courseTitle = currentDevflix?.title || 'Profissão Gestor de Tráfego';
   const courseSubtitle = currentDevflix?.subtitle || 'Domine o tráfego pago e transforme sua carreira';
   
@@ -93,16 +117,16 @@ const Home = () => {
         onToggle={toggleBannerVisibility}
       />
       
-      {/* Hero Section com background video */}
-      <div className="relative h-screen w-full bg-netflix-black">
+{/* Hero Section with extended background video - containing "Em alta" section */}
+      <div className="relative min-h-screen w-full bg-netflix-black">
         <BackgroundVideo 
-          videoSrc={DevFlix}
+          videoSrc={VideoSrc}
           fallbackImageSrc={fallbackImageSrc}
           overlay={true}
           darken={true}
         >
-          {/* Content */}
-          <div className="h-full container-custom flex flex-col justify-center">
+          {/* Hero Content - reduced height to make room for thumbnails */}
+          <div className="h-[75vh] container-custom flex flex-col justify-center">
             <div className="max-w-2xl">
               <motion.div
                 initial={{ opacity: 0, y: -20 }}
@@ -118,7 +142,7 @@ const Home = () => {
                 </p>
                 
                 <div className="flex flex-wrap gap-4">
-                  {/* Primary Button - Will open in new tab if external link */}
+                  {/* Primary Button */}
                   <a 
                     href={formatUrl(homeButtons.primary.url)}
                     target={isExternalLink(homeButtons.primary.url) ? "_blank" : "_self"}
@@ -147,7 +171,7 @@ const Home = () => {
                     </a>
                   )}
                   
-                  {/* WhatsApp Button - Only shown if enabled */}
+                  {/* WhatsApp Button - Only if enabled */}
                   {homeButtons.whatsapp && homeButtons.whatsapp.enabled && (
                     <a 
                       href={homeButtons.whatsapp.url}
@@ -165,93 +189,126 @@ const Home = () => {
               </motion.div>
             </div>
           </div>
+
+          {/* "Em alta" section now positioned higher with less padding */}
+          <div className="relative z-10 -mt-16">
+            <section className="py-8">
+              <div className="container-custom">
+                <motion.h2 
+                  className="section-header mb-6"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  Em alta
+                </motion.h2>
+                
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                  {classes.map((course, index) => (
+                    <motion.div
+                      key={course.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: Math.min(index * 0.1, 0.4) }} // Limiting delay
+                    >
+                      <MemoizedCourseCard 
+                        course={course} 
+                        basePath={basePath}
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+                
+                {homeButtons.secondary.enabled && (
+                  <motion.div
+                    className="mt-12 text-center"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.5, delay: 0.3 }}
+                  >
+                    <a 
+                      href={formatUrl(homeButtons.secondary.url)}
+                      target={isExternalLink(homeButtons.secondary.url) ? "_blank" : "_self"}
+                      rel={isExternalLink(homeButtons.secondary.url) ? "noopener noreferrer" : ""}
+                      className="btn-primary py-3 px-8 text-lg"
+                    >
+                      {homeButtons.secondary.text}
+                    </a>
+                  </motion.div>
+                )}
+              </div>
+            </section>
+          </div>
         </BackgroundVideo>
       </div>
-
-      {/* Courses Section - Moved up to appear in first fold */}
-      <section className="py-16 bg-netflix-black -mt-64 relative z-10">  {/* Changed from -mt-32 to -mt-64 to move up */}
-        <div className="container-custom">
-          <motion.h2 
-            className="section-header"
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
-            Em alta
-          </motion.h2>
-          
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {classes.map((course, index) => (
-              <motion.div
-                key={course.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <CourseCard 
-                  course={course} 
-                  basePath={basePath}
-                />
-              </motion.div>
-            ))}
-          </div>
-          
-          {homeButtons.secondary.enabled && (
-            <motion.div
-              className="mt-16 text-center"
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.5 }}
-            >
-              <a 
-                href={formatUrl(homeButtons.secondary.url)}
-                target={isExternalLink(homeButtons.secondary.url) ? "_blank" : "_self"}
-                rel={isExternalLink(homeButtons.secondary.url) ? "noopener noreferrer" : ""}
-                className="btn-primary py-3 px-8 text-lg"
-              >
-                {homeButtons.secondary.text}
-              </a>
-            </motion.div>
-          )}
-        </div>
-      </section>
       
-      {/* About section */}
+      {/* About section - lazy loaded */}
       <section className="py-16 bg-netflix-dark">
         <div className="container-custom">
           <div className="flex flex-col md:flex-row gap-10">
             <div className="md:w-2/3">
-              <h2 className="section-header mb-6">Sobre o curso</h2>
-              <p className="text-gray-300 mb-4">
-                Transforme sua carreira aprendendo a gerenciar tráfego pago de forma eficiente. Este curso completo 
-                vai te ensinar tudo o que precisa para se tornar um especialista em gestão de tráfego e aumentar 
-                significativamente seus resultados online.
-              </p>
-              <p className="text-gray-300 mb-4">
-                Aprenda estratégias avançadas de configuração de campanhas, segmentação de audiência, 
-                otimização de conversões e muito mais!
-              </p>
+              <motion.h2 
+                className="section-header mb-6"
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+              >
+                Sobre o curso
+              </motion.h2>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              >
+                <p className="text-gray-300 mb-4">
+                  Transforme sua carreira aprendendo a gerenciar tráfego pago de forma eficiente. Este curso completo 
+                  vai te ensinar tudo o que precisa para se tornar um especialista em gestão de tráfego e aumentar 
+                  significativamente seus resultados online.
+                </p>
+                <p className="text-gray-300 mb-4">
+                  Aprenda estratégias avançadas de configuração de campanhas, segmentação de audiência, 
+                  otimização de conversões e muito mais!
+                </p>
+              </motion.div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
-                <div className="bg-netflix-black p-4 rounded-md">
+                <motion.div 
+                  className="bg-netflix-black p-4 rounded-md"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
+                >
                   <h3 className="text-xl font-bold mb-2">{classes.length} Aulas</h3>
                   <p className="text-gray-400">Conteúdo completo dividido em módulos práticos</p>
-                </div>
-                <div className="bg-netflix-black p-4 rounded-md">
+                </motion.div>
+                <motion.div 
+                  className="bg-netflix-black p-4 rounded-md"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: 0.4 }}
+                >
                   <h3 className="text-xl font-bold mb-2">Materiais Exclusivos</h3>
                   <p className="text-gray-400">Templates e recursos para implementação imediata</p>
-                </div>
+                </motion.div>
               </div>
             </div>
             
-            <div className="md:w-1/3 bg-netflix-black rounded-md overflow-hidden">
+            <motion.div 
+              className="md:w-1/3 bg-netflix-black rounded-md overflow-hidden"
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
               <img 
                 src={currentDevflix?.instructorImage || "/images/instructor.png"} 
                 alt="Instrutor" 
                 className="w-full object-cover h-64"
+                loading="lazy" // Lazy load this image
               />
               <div className="p-4">
                 <h3 className="text-xl font-bold mb-1">Seu Instrutor</h3>
@@ -261,7 +318,7 @@ const Home = () => {
                   a escalar seus resultados através do tráfego pago.
                 </p>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>

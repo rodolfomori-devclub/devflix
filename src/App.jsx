@@ -1,32 +1,33 @@
-// src/App.jsx (updated with correct route title)
+// src/App.jsx (updated with optimized loading)
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import Home from './pages/Home';
-import Materiais from './pages/Materiais';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Loading from './components/Loading';
-import ErrorPage from './pages/ErrorPage';
 import ErrorPageStandalone from './pages/ErrorPageStandalone';
 import ErrorRouteHandler from './pages/ErrorRouteHandler';
 
-// Componentes de Admin
-import AdminLayout from './admin/components/AdminLayout';
-import AdminHome from './admin/pages/AdminHome';
-import AdminMaterials from './admin/pages/AdminMaterials';
-import AdminImages from './admin/pages/AdminImages'; // Import Images page
-import AdminHeaderSettings from './admin/pages/AdminHeaderSettings';
-import AdminSettings from './admin/pages/AdminSettings';
-import Login from './admin/pages/Login';
-import ProtectedRoute from './admin/components/ProtectedRoute';
+// Lazy loaded components
+const Home = lazy(() => import('./pages/Home'));
+const Materiais = lazy(() => import('./pages/Materiais'));
 
-// Provedores de Contexto
+// Admin components - lazy loaded
+const AdminLayout = lazy(() => import('./admin/components/AdminLayout'));
+const AdminHome = lazy(() => import('./admin/pages/AdminHome'));
+const AdminMaterials = lazy(() => import('./admin/pages/AdminMaterials'));
+const AdminImages = lazy(() => import('./admin/pages/AdminImages'));
+const AdminHeaderSettings = lazy(() => import('./admin/pages/AdminHeaderSettings'));
+const AdminSettings = lazy(() => import('./admin/pages/AdminSettings'));
+const Login = lazy(() => import('./admin/pages/Login'));
+const ProtectedRoute = lazy(() => import('./admin/components/ProtectedRoute'));
+
+// Context Providers
 import { AdminProvider } from './admin/contexts/AdminContext';
 import { DevflixProvider } from './contexts/DevflixContext';
 import { AuthProvider } from './contexts/AuthContext';
 import SchedulerChecker from './components/SchedulerChecker';
 
-// Componente para simular páginas de aula individuais
+// Simplified Aula Page Component
 const AulaPage = ({ match }) => {
   return (
     <div className="pt-24 pb-16 min-h-screen bg-netflix-black">
@@ -43,107 +44,147 @@ const AulaPage = ({ match }) => {
 function App() {
   const [isLoading, setIsLoading] = useState(true);
   
-  // Simulação de carregamento de recursos
+  // Simpler loading approach
   useEffect(() => {
-    // Simulando o tempo de carregamento dos recursos
-    console.log('Carregando recursos...');
-    
-    // Verificar se as imagens existem e estão acessíveis
-    const preloadImages = async () => {
+    // Preload critical images at start
+    const preloadCriticalImages = async () => {
       try {
-        // Verificar a imagem do instrutor
-        const instructorImg = new Image();
-        instructorImg.src = '/images/instructor.png';
+        // Load only essential images first
+        const img = new Image();
+        img.src = '/images/bg-hero.jpg';
         
-        // Verificar imagens das aulas
-        for (let i = 1; i <= 4; i++) {
-          const img = new Image();
-          img.src = `/images/aula${i}.jpg`;
-        }
+        // Set a reasonable loading time to ensure UI renders smoothly
+        const loadingTimer = setTimeout(() => {
+          setIsLoading(false);
+        }, 2000);
         
-        console.log('Imagens pré-carregadas com sucesso!');
+        return () => clearTimeout(loadingTimer);
       } catch (error) {
-        console.warn('Algumas imagens podem não estar disponíveis:', error);
+        console.warn('Error preloading images:', error);
+        // Fallback - stop loading even if there's an error
+        setIsLoading(false);
       }
     };
     
-    preloadImages();
-    
-    // Aqui você pode adicionar lógica para carregar ou pré-carregar recursos
-    const loadingTimer = setTimeout(() => {
-      setIsLoading(false);
-      console.log('Recursos carregados!');
-    }, 2500);
-    
-    return () => clearTimeout(loadingTimer);
+    preloadCriticalImages();
   }, []);
 
   return (
     <Router>
       <AuthProvider>
         <AdminProvider>
-          {/* Adicionar verificador de agendamentos */}
+          {/* Add scheduler checker */}
           <SchedulerChecker />
           
-          <Routes>
-            {/* Rota raiz - redireciona para página de erro standalone */}
-            <Route path="/" element={<ErrorPageStandalone message="Selecione uma DevFlix específica" code="404" />} />
-            
-            {/* Nova rota para lidar com erros dinamicamente */}
-            <Route path="/error" element={<ErrorRouteHandler />} />
-            
-            {/* Rota de Login */}
-            <Route path="/admin/login" element={<Login />} />
-            
-            {/* Rotas de Admin Protegidas */}
-            <Route element={<ProtectedRoute />}>
-              <Route path="/admin/dev" element={<AdminLayout />}>
-                <Route index element={<AdminHome />} />
-                <Route path="materials" element={<AdminMaterials />} />
-                <Route path="images" element={<AdminImages />} />
-                <Route path="header" element={<AdminHeaderSettings />} />
-                <Route path="settings" element={<AdminSettings />} />
+          {isLoading ? (
+            <Loading />
+          ) : (
+            <Routes>
+              {/* Root route - redirects to error standalone page */}
+              <Route path="/" element={<ErrorPageStandalone message="Selecione uma DevFlix específica" code="404" />} />
+              
+              {/* Dynamic error route handler */}
+              <Route path="/error" element={<ErrorRouteHandler />} />
+              
+              {/* Login Route */}
+              <Route path="/admin/login" element={
+                <Suspense fallback={<Loading />}>
+                  <Login />
+                </Suspense>
+              } />
+              
+              {/* Protected Admin Routes */}
+              <Route element={
+                <Suspense fallback={<Loading />}>
+                  <ProtectedRoute />
+                </Suspense>
+              }>
+                <Route path="/admin/dev" element={
+                  <Suspense fallback={<Loading />}>
+                    <AdminLayout />
+                  </Suspense>
+                }>
+                  <Route index element={
+                    <Suspense fallback={<div className="h-screen bg-netflix-black flex items-center justify-center">
+                      <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-netflix-red rounded-full"></div>
+                    </div>}>
+                      <AdminHome />
+                    </Suspense>
+                  } />
+                  <Route path="materials" element={
+                    <Suspense fallback={<div className="h-screen bg-netflix-black flex items-center justify-center">
+                      <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-netflix-red rounded-full"></div>
+                    </div>}>
+                      <AdminMaterials />
+                    </Suspense>
+                  } />
+                  <Route path="images" element={
+                    <Suspense fallback={<div className="h-screen bg-netflix-black flex items-center justify-center">
+                      <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-netflix-red rounded-full"></div>
+                    </div>}>
+                      <AdminImages />
+                    </Suspense>
+                  } />
+                  <Route path="header" element={
+                    <Suspense fallback={<div className="h-screen bg-netflix-black flex items-center justify-center">
+                      <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-netflix-red rounded-full"></div>
+                    </div>}>
+                      <AdminHeaderSettings />
+                    </Suspense>
+                  } />
+                  <Route path="settings" element={
+                    <Suspense fallback={<div className="h-screen bg-netflix-black flex items-center justify-center">
+                      <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-netflix-red rounded-full"></div>
+                    </div>}>
+                      <AdminSettings />
+                    </Suspense>
+                  } />
+                </Route>
               </Route>
-            </Route>
-            
-            {/* Rotas específicas para cada DevFlix */}
-            <Route path="/:path" element={
-              isLoading ? (
-                <Loading />
-              ) : (
+              
+              {/* DevFlix Routes */}
+              <Route path="/:path" element={
                 <DevflixProvider>
                   <Navbar />
                   <main className="flex-grow">
-                    <Home />
+                    <Suspense fallback={<div className="h-screen bg-netflix-black flex items-center justify-center">
+                      <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-netflix-red rounded-full"></div>
+                    </div>}>
+                      <Home />
+                    </Suspense>
                   </main>
                   <Footer />
                 </DevflixProvider>
-              )
-            } />
-            
-            {/* Rotas de materiais - sempre seguem o caminho da home */}
-            <Route path="/:path/materiais" element={
-              <DevflixProvider>
-                <Navbar />
-                <main className="flex-grow">
-                  <Materiais />
-                </main>
-                <Footer />
-              </DevflixProvider>
-            } />
-            
-            {/* Rotas de aulas */}
-            <Route path="/:path/aula/:id" element={
-              <DevflixProvider>
-                <Navbar />
-                <AulaPage match={{ params: { id: window.location.pathname.split('/').pop() } }} />
-                <Footer />
-              </DevflixProvider>
-            } />
-            
-            {/* Rota para redirecionar caminhos não encontrados */}
-            <Route path="*" element={<ErrorPageStandalone message="Página não encontrada" code="404" />} />
-          </Routes>
+              } />
+              
+              {/* Materials routes */}
+              <Route path="/:path/materiais" element={
+                <DevflixProvider>
+                  <Navbar />
+                  <main className="flex-grow">
+                    <Suspense fallback={<div className="h-screen bg-netflix-black flex items-center justify-center">
+                      <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-netflix-red rounded-full"></div>
+                    </div>}>
+                      <Materiais />
+                    </Suspense>
+                  </main>
+                  <Footer />
+                </DevflixProvider>
+              } />
+              
+              {/* Class routes */}
+              <Route path="/:path/aula/:id" element={
+                <DevflixProvider>
+                  <Navbar />
+                  <AulaPage match={{ params: { id: window.location.pathname.split('/').pop() } }} />
+                  <Footer />
+                </DevflixProvider>
+              } />
+              
+              {/* Catch-all route for not found pages */}
+              <Route path="*" element={<ErrorPageStandalone message="Página não encontrada" code="404" />} />
+            </Routes>
+          )}
         </AdminProvider>
       </AuthProvider>
     </Router>
