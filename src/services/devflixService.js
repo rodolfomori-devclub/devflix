@@ -18,7 +18,7 @@ const initialDevflixData = [
         {
           id: '1',
           title: 'Aula 1: Introdução ao HTML e CSS',
-          coverImage: '/images/aula1.jpg',
+          coverImage: '../assets/THUMB-01.jpg',
           videoLink: 'https://exemplo.com/aula1'
         },
         {
@@ -88,7 +88,7 @@ const initialDevflixData = [
         {
           id: '1',
           title: 'Aula 1: HTML e CSS Avançados',
-          coverImage: '/images/aula1.jpg',
+          coverImage: '../assets/THUMB-01.jpg',
           videoLink: 'https://exemplo.com/aula1-nova'
         },
         {

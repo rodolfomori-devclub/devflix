@@ -1,10 +1,28 @@
-// src/components/CourseCard.jsx (Netflix-style)
+// src/components/CourseCard.jsx (updated)
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
 
 const CourseCard = ({ course, basePath = '' }) => {
   const [isHovered, setIsHovered] = useState(false);
+  
+  // Function to get image with proper React syntax
+  const getCourseImage = () => {
+    // Check if there's a dynamic coverImage in the course object
+    if (course.coverImage) {
+      // Return the image with proper path handling
+      return course.coverImage.startsWith('http') 
+        ? course.coverImage  // Use as-is if it's a full URL
+        : course.coverImage; // Assume it's a correct path
+    }
+    
+    // Fallback image if none specified
+    return `/images/aula${course.id}.jpg`;
+  };
+  
+  // Function to determine if a link is external
+  const isExternalLink = (url) => {
+    return url && (url.startsWith('http://') || url.startsWith('https://'));
+  };
   
   return (
     <motion.div 
@@ -18,7 +36,7 @@ const CourseCard = ({ course, basePath = '' }) => {
       <div className="relative">
         {/* Thumbnail Image */}
         <img 
-          src={course.coverImage} 
+          src={getCourseImage()} 
           alt={`Capa da ${course.title}`}
           className="course-card-image transition-transform duration-500 group-hover:scale-110 group-hover:brightness-50"
         />
@@ -35,9 +53,12 @@ const CourseCard = ({ course, basePath = '' }) => {
             <p className="text-sm text-gray-300 mb-4">{course.description}</p>
           )}
           
-          <div className="flex space-x-2">
-            <Link 
-              to={`${basePath}/aula/${course.id}`} 
+          <div className="flex">
+            {/* Single button that opens in a new tab */}
+            <a 
+              href={course.videoLink || `${basePath}/aula/${course.id}`} 
+              target="_blank"
+              rel="noopener noreferrer"
               className="course-card-button flex-1 text-center"
             >
               <div className="flex items-center justify-center">
@@ -47,23 +68,7 @@ const CourseCard = ({ course, basePath = '' }) => {
                 </svg>
                 Assistir
               </div>
-            </Link>
-            
-            {course.videoLink && (
-              <a 
-                href={course.videoLink} 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="course-card-button flex-1 text-center bg-gray-700 hover:bg-gray-600"
-              >
-                <div className="flex items-center justify-center">
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
-                  </svg>
-                  Link Direto
-                </div>
-              </a>
-            )}
+            </a>
           </div>
         </div>
       </div>
@@ -71,12 +76,14 @@ const CourseCard = ({ course, basePath = '' }) => {
       {/* Info visible outside of hover for mobile UX */}
       <div className="p-3 bg-netflix-dark md:hidden">
         <h3 className="text-sm font-bold truncate mb-2">{course.title}</h3>
-        <Link 
-          to={`${basePath}/aula/${course.id}`} 
+        <a 
+          href={course.videoLink || `${basePath}/aula/${course.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
           className="course-card-button block w-full text-center text-sm py-1"
         >
           Assistir Agora
-        </Link>
+        </a>
       </div>
       
       {/* Motion Animation for Scale Effect */}

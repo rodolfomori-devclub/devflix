@@ -17,6 +17,24 @@ import { db } from './config';
 // Referências às coleções
 const devflixCollection = collection(db, 'devflix-instances');
 
+// src/firebase/firebaseService.js (Add this function)
+
+
+// Update home buttons configuration
+export const updateHomeButtons = async (instanceId, buttonsData) => {
+  try {
+    const docRef = doc(devflixCollection, instanceId);
+    await updateDoc(docRef, { 
+      homeButtons: buttonsData,
+      updatedAt: serverTimestamp()
+    });
+    return true;
+  } catch (error) {
+    console.error("Erro ao atualizar configurações de botões:", error);
+    throw error;
+  }
+};
+
 // Obter todas as instâncias da DevFlix
 export const getAllDevflixInstances = async () => {
   try {
@@ -81,6 +99,14 @@ export const getDevflixByPath = async (path) => {
 };
 
 // Adicionar nova instância DevFlix
+// Update to the addDevflixInstance function in src/firebase/firebaseService.js
+
+// Adicionar nova instância DevFlix
+// Update to the addDevflixInstance function in src/firebase/firebaseService.js
+
+// src/firebase/firebaseService.js (Add backgroundVideo field)
+
+// Update initialization in addDevflixInstance
 export const addDevflixInstance = async (data) => {
   try {
     // Verificar se o path já existe
@@ -140,6 +166,22 @@ export const addDevflixInstance = async (data) => {
         buttonTextColor: '#ffffff',
         scheduledVisibility: null
       },
+      homeButtons: data.homeButtons || {
+        primary: {
+          text: 'Assistir Agora',
+          url: ''
+        },
+        secondary: {
+          enabled: true,
+          text: 'Materiais de Apoio',
+          url: '/materiais'
+        },
+        whatsapp: {
+          enabled: false,
+          text: 'Entre no Grupo VIP do WhatsApp',
+          url: 'https://chat.whatsapp.com/example'
+        }
+      },
       headerLinks: data.headerLinks || [
         {
           id: 'link-home',
@@ -156,6 +198,9 @@ export const addDevflixInstance = async (data) => {
           order: 1
         }
       ],
+      heroImage: data.heroImage || '/images/bg-hero.jpg',
+      instructorImage: data.instructorImage || '/images/instructor.png',
+      backgroundVideo: data.backgroundVideo || '/videos/background.mp4',
       bannerEnabled: data.bannerEnabled !== undefined ? data.bannerEnabled : false,
       isPublished: data.isPublished !== undefined ? data.isPublished : true
     };
@@ -167,6 +212,9 @@ export const addDevflixInstance = async (data) => {
     throw error;
   }
 };
+
+// Duplicar uma instância DevFlix existente
+// Update to the duplicateDevflixInstance function in src/firebase/firebaseService.js
 
 // Duplicar uma instância DevFlix existente
 export const duplicateDevflixInstance = async (id, newPath, newName) => {
@@ -196,6 +244,17 @@ export const duplicateDevflixInstance = async (id, newPath, newName) => {
       materials: [...originalInstance.materials],
       banner: {...originalInstance.banner},
       bannerEnabled: originalInstance.bannerEnabled,
+      // Copy home buttons configuration
+      homeButtons: originalInstance.homeButtons 
+        ? {...originalInstance.homeButtons} 
+        : {
+            primary: { text: 'Assistir Agora', url: '' },
+            secondary: { text: 'Materiais de Apoio', url: '/materiais' },
+            whatsapp: { enabled: false, text: 'Entre no Grupo VIP do WhatsApp', url: 'https://chat.whatsapp.com/example' }
+          },
+      // Copy hero and instructor images
+      heroImage: originalInstance.heroImage || '/images/bg-hero.jpg',
+      instructorImage: originalInstance.instructorImage || '/images/instructor.png',
       headerLinks: originalInstance.headerLinks 
         ? [...originalInstance.headerLinks] 
         : [

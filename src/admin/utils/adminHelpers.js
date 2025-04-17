@@ -55,56 +55,79 @@ export const saveToStorage = (data) => {
   };
   
   // Função que retorna um novo objeto de DevFlix padrão
-  export const getDefaultDevflix = (name, path) => {
-    return {
-      id: generateId(),
-      name,
-      path,
-      bannerEnabled: false,
-      banner: getDefaultBanner(),
-      classes: [
-        {
-          id: '1',
-          title: 'Aula 1: Introdução ao HTML e CSS',
-          coverImage: '/images/aula1.jpg',
-          videoLink: 'https://exemplo.com/aula1'
-        },
-        {
-          id: '2',
-          title: 'Aula 2: JavaScript Básico',
-          coverImage: '/images/aula2.jpg',
-          videoLink: 'https://exemplo.com/aula2'
-        },
-        {
-          id: '3',
-          title: 'Aula 3: React Fundamentos',
-          coverImage: '/images/aula3.jpg',
-          videoLink: 'https://exemplo.com/aula3'
-        },
-        {
-          id: '4',
-          title: 'Aula 4: Projeto Final',
-          coverImage: '/images/aula4.jpg',
-          videoLink: 'https://exemplo.com/aula4'
-        }
-      ],
-      materials: [
-        {
-          classId: '1',
-          items: []
-        },
-        {
-          classId: '2',
-          items: []
-        },
-        {
-          classId: '3',
-          items: []
-        },
-        {
-          classId: '4',
-          items: []
-        }
-      ]
-    };
+ // src/admin/utils/adminHelpers.js (update getDefaultDevflix function)
+
+// Função que retorna um novo objeto de DevFlix padrão
+export const getDefaultDevflix = (name, path) => {
+  return {
+    id: generateId(),
+    name,
+    path,
+    bannerEnabled: false,
+    banner: getDefaultBanner(),
+    classes: [
+      {
+        id: '1',
+        title: 'Aula 1: Introdução ao HTML e CSS',
+        coverImage: '/images/aula1.jpg',
+        videoLink: 'https://exemplo.com/aula1'
+      },
+      {
+        id: '2',
+        title: 'Aula 2: JavaScript Básico',
+        coverImage: '/images/aula2.jpg',
+        videoLink: 'https://exemplo.com/aula2'
+      },
+      {
+        id: '3',
+        title: 'Aula 3: React Fundamentos',
+        coverImage: '/images/aula3.jpg',
+        videoLink: 'https://exemplo.com/aula3'
+      },
+      {
+        id: '4',
+        title: 'Aula 4: Projeto Final',
+        coverImage: '/images/aula4.jpg',
+        videoLink: 'https://exemplo.com/aula4'
+      }
+    ],
+    materials: [
+      {
+        classId: '1',
+        items: []
+      },
+      {
+        classId: '2',
+        items: []
+      },
+      {
+        classId: '3',
+        items: []
+      },
+      {
+        classId: '4',
+        items: []
+      }
+    ],
+    // Adding default home buttons configuration
+    homeButtons: {
+      primary: {
+        text: 'Assistir Agora',
+        url: ''
+      },
+      secondary: {
+        text: 'Materiais de Apoio',
+        url: '/materiais'
+      },
+      whatsapp: {
+        enabled: false,
+        text: 'Entre no Grupo VIP do WhatsApp',
+        url: 'https://chat.whatsapp.com/example'
+      }
+    },
+    // Add heroImage and instructorImage fields
+    heroImage: '/images/bg-hero.jpg',
+    instructorImage: '/images/instructor.png'
   };
+};
+  

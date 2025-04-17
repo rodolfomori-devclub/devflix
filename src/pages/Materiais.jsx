@@ -1,6 +1,5 @@
-// src/pages/Materiais.jsx (ajuste de espaçamento)
+// src/pages/Materiais.jsx (updated)
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
 import { useDevflix } from '../contexts/DevflixContext';
 import PromoBanner from '../components/PromoBanner';
 
@@ -70,7 +69,8 @@ const Materiais = () => {
     toggleBannerVisibility,
     isLoading, 
     error, 
-    path 
+    path,
+    currentDevflix
   } = useDevflix();
   
   // Usa o path do contexto para garantir consistência nas rotas
@@ -86,9 +86,15 @@ const Materiais = () => {
     return {
       id: classItem.id,
       title: classItem.title,
+      videoLink: classItem.videoLink || '', // Get the videoLink
       links: classMaterials ? classMaterials.items : []
     };
   });
+  
+  // Function to determine if a link is external
+  const isExternalLink = (url) => {
+    return url && (url.startsWith('http://') || url.startsWith('https://'));
+  };
   
   if (isLoading) {
     return (
@@ -105,12 +111,12 @@ const Materiais = () => {
           <div className="max-w-4xl mx-auto bg-netflix-dark p-8 rounded-lg shadow-lg">
             <h1 className="text-2xl font-bold text-netflix-red mb-4">Erro ao carregar materiais</h1>
             <p className="text-white mb-6">{error}</p>
-            <Link 
-              to={basePath} 
+            <a 
+              href={basePath}
               className="btn-primary py-2 px-4 inline-block"
             >
               Voltar para Home
-            </Link>
+            </a>
           </div>
         </div>
       </div>
@@ -135,15 +141,15 @@ const Materiais = () => {
         >
           <div className="flex justify-between items-center mb-12">
             <h1 className="text-4xl font-bold">Materiais de Apoio</h1>
-            <Link 
-              to={basePath}
+            <a 
+              href={basePath}
               className="flex items-center text-gray-300 hover:text-white transition-colors"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
               </svg>
               Voltar para Home
-            </Link>
+            </a>
           </div>
           
           <p className="text-gray-300 mb-8">
@@ -210,8 +216,10 @@ const Materiais = () => {
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.5 }}
               >
-                <Link 
-                  to={`${basePath}/aula/${aula.id}`} 
+                <a 
+                  href={aula.videoLink || `${basePath}/aula/${aula.id}`} 
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="btn-primary inline-flex items-center"
                 >
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -219,7 +227,7 @@ const Materiais = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                   </svg>
                   Assistir Aula {aula.id}
-                </Link>
+                </a>
               </motion.div>
             </motion.div>
           ))}

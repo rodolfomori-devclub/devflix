@@ -7,6 +7,7 @@ import {
 import { 
   getAllDevflixInstances, 
   getDevflixById, 
+  updateHomeButtons as updateHomeButtonsInFirebase,
   addDevflixInstance as addDevflixToFirebase, 
   updateDevflixInstance as updateDevflixInFirebase, 
   deleteDevflixInstance as deleteDevflixFromFirebase,
@@ -56,6 +57,30 @@ export const AdminProvider = ({ children }) => {
 
     fetchData();
   }, []);
+
+  const updateHomeButtons = async (buttonsData) => {
+    if (!currentDevflix) return;
+    
+    try {
+      // Atualizar no Firebase
+      await updateHomeButtonsInFirebase(currentDevflix.id, buttonsData);
+      
+      // Atualizar estado local
+      const updated = { ...currentDevflix, homeButtons: buttonsData };
+      setCurrentDevflix(updated);
+      
+      // Atualizar a lista de instâncias
+      setDevflixInstances(prev => prev.map(instance => 
+        instance.id === currentDevflix.id ? updated : instance
+      ));
+      
+      return true;
+    } catch (err) {
+      console.error('Erro ao atualizar botões:', err);
+      setError('Falha ao atualizar botões.');
+      throw err;
+    }
+  };
 
   // Função para adicionar uma nova instância DevFlix
   const addDevflixInstance = async (newInstance) => {
@@ -454,7 +479,8 @@ export const AdminProvider = ({ children }) => {
     updateBanner,
     toggleBanner,
     updateHeaderLinks,
-    togglePublishStatus
+    togglePublishStatus,
+    updateHomeButtons
   };
 
   return (

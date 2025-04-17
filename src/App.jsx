@@ -1,4 +1,4 @@
-// src/App.jsx (updated with error routes)
+// src/App.jsx (updated with correct route title)
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Home from './pages/Home';
@@ -14,6 +14,7 @@ import ErrorRouteHandler from './pages/ErrorRouteHandler';
 import AdminLayout from './admin/components/AdminLayout';
 import AdminHome from './admin/pages/AdminHome';
 import AdminMaterials from './admin/pages/AdminMaterials';
+import AdminImages from './admin/pages/AdminImages'; // Import Images page
 import AdminHeaderSettings from './admin/pages/AdminHeaderSettings';
 import AdminSettings from './admin/pages/AdminSettings';
 import Login from './admin/pages/Login';
@@ -99,6 +100,7 @@ function App() {
               <Route path="/admin/dev" element={<AdminLayout />}>
                 <Route index element={<AdminHome />} />
                 <Route path="materials" element={<AdminMaterials />} />
+                <Route path="images" element={<AdminImages />} />
                 <Route path="header" element={<AdminHeaderSettings />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
