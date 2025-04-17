@@ -6,6 +6,7 @@ import PromoBanner from '../components/PromoBanner';
 import BackgroundVideo from '../components/BackgroundVideo';
 import { useDevflix } from '../contexts/DevflixContext';
 import VideoSrc from '../assets/devflix.mp4'
+import Instrutor from '../assets/instrutor.png'
 
 // Memoized CourseCard to prevent unnecessary re-renders
 const MemoizedCourseCard = memo(CourseCard);
@@ -310,7 +311,8 @@ const Home = () => {
               transition={{ duration: 0.5, delay: 0.3 }}
             >
               <img
-                src={currentDevflix?.instructorImage || "/images/instructor.png"}
+                // src={currentDevflix?.instructorImage || Instrutor}
+                src={Instrutor}
                 alt="Instrutor"
                 className="w-full object-cover h-64"
                 loading="lazy" // Lazy load this image
