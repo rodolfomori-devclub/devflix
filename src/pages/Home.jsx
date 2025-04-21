@@ -1,9 +1,10 @@
-// src/pages/Home.jsx - Performance optimized version
+// src/pages/Home.jsx with updated card buttons
 import { useState, useEffect, useMemo, memo } from 'react';
 import { motion } from 'framer-motion';
 import CourseCard from '../components/CourseCard';
 import PromoBanner from '../components/PromoBanner';
 import BackgroundVideo from '../components/BackgroundVideo';
+import FloatingWhatsAppButton from '../components/FloatingWhatsAppButton';
 import { useDevflix } from '../contexts/DevflixContext';
 import VideoSrc from '../assets/devflix.mp4'
 import Instrutor from '../assets/instrutor.png'
@@ -51,7 +52,7 @@ const Home = () => {
     };
 
     // Implement a short timeout to ensure UI is responsive
-    const timer = setTimeout(loadEssentialResources, 800);
+    const timer = setTimeout(loadEssentialResources, 500); // Reduced timeout for better performance
 
     return () => clearTimeout(timer);
   }, []);
@@ -118,6 +119,9 @@ const Home = () => {
         onToggle={toggleBannerVisibility}
       />
 
+      {/* Floating WhatsApp Button */}
+      <FloatingWhatsAppButton />
+
       {/* Hero Section with extended background video - containing "Em alta" section */}
       <div className="relative min-h-screen w-full bg-netflix-black">
         <BackgroundVideo
@@ -181,7 +185,7 @@ const Home = () => {
                       className="bg-green-600 hover:bg-green-700 text-white py-3 px-8 text-lg rounded flex items-center"
                     >
                       <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M17.498 14.382c-.301-.15-1.767-.867-2.04-.966-.273-.101-.473-.15-.673.15-.197.3-.77.966-.944 1.164-.175.2-.349.223-.647.075-.3-.15-1.269-.465-2.411-1.485-.897-.8-1.502-1.788-1.674-2.085-.172-.3-.018-.465.13-.61.134-.133.3-.347.448-.522.15-.17.2-.3.3-.498.099-.2.05-.375-.025-.522-.075-.15-.672-1.621-.922-2.22-.24-.6-.487-.51-.672-.51-.172-.015-.371-.015-.571-.015-.2 0-.522.074-.797.375-.273.3-1.045 1.019-1.045 2.487 0 1.462 1.069 2.875 1.219 3.074.149.2 2.096 3.2 5.077 4.487.712.3 1.268.48 1.704.625.714.227 1.365.195 1.88.125.57-.075 1.758-.719 2.006-1.413.248-.693.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.422 7.403h-.004a9.87 9.87 0 01-5.032-1.378l-.36-.214-3.742.982.999-3.658-.235-.374a9.86 9.86 0 01-1.51-5.26c.002-5.45 4.436-9.884 9.889-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.993c-.003 5.45-4.437 9.884-9.885 9.884m8.412-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.1.547 4.149 1.588 5.951L0 24l6.304-1.654a11.882 11.882 0 005.684 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413" fillRule="evenodd" />
+                        <path d="M17.498 14.382c-.301-.15-1.767-.867-2.04-.966-.273-.101-.473-.15-.673.15-.197.3-.77.966-.944 1.164-.175.2-.349.223-.647.075-.3-.15-1.269-.465-2.411-1.485-.897-.8-1.502-1.788-1.674-2.085-.172-.3-.018-.465.13-.61.134-.133.3-.347.448-.522.15-.17.2-.3.3-.498.099-.2.05-.375-.025-.522-.075-.15-.672-1.621-.922-2.22-.24-.6-.487-.51-.672-.51-.172-.015-.371-.015-.571-.015-.2 0-.522.074-.797.375-.273.3-1.045 1.019-1.045 2.487 0 1.462 1.069 2.875 1.219 3.074.149.2 2.096 3.2 5.077 4.487.712.3 1.268.48 1.704.625.714.227 1.365.195 1.88.125.57-.075 1.758-.719 2.006-1.413.248-.693.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.422 7.403h-.004a9.87 9.87 0 01-5.032-1.378l-.36-.214-3.742.982.999-3.658-.235-.374a9.86 9.86 0 01-1.51-5.26c.002-5.45 4.436-9.884 9.889-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.993c-.003 5.45-4.437 9.884-9.885 9.884m8.412-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.1.547 4.149 1.588 5.951L0 24l6.304-1.654a11.882 11.882 0 005.684 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413" fillRule="evenodd"/>
                       </svg>
                       {homeButtons.whatsapp.text}
                     </a>
@@ -284,8 +288,23 @@ const Home = () => {
                 >
                   <h3 className="text-xl font-bold mb-2">Entre no Grupo VIP do Whatsapp
                   </h3>
-                  <p className="text-gray-400">Clique abaixo e entre no meu grupo exclusivo no Whatsapp para ter acesso aos avisos, atualizações e à condição exclusiva da Formação de programadores DevClub Full Stack.
+                  <p className="text-gray-400 mb-4">Clique abaixo e entre no meu grupo exclusivo no Whatsapp para ter acesso aos avisos, atualizações e à condição exclusiva da Formação de programadores DevClub Full Stack.
                   </p>
+                  
+                  {/* WhatsApp button for the card - copy of main whatsapp button */}
+                  {homeButtons.whatsapp && homeButtons.whatsapp.enabled && (
+                    <a
+                      href={homeButtons.whatsapp.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 text-sm rounded flex items-center w-max"
+                    >
+                      <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M17.498 14.382c-.301-.15-1.767-.867-2.04-.966-.273-.101-.473-.15-.673.15-.197.3-.77.966-.944 1.164-.175.2-.349.223-.647.075-.3-.15-1.269-.465-2.411-1.485-.897-.8-1.502-1.788-1.674-2.085-.172-.3-.018-.465.13-.61.134-.133.3-.347.448-.522.15-.17.2-.3.3-.498.099-.2.05-.375-.025-.522-.075-.15-.672-1.621-.922-2.22-.24-.6-.487-.51-.672-.51-.172-.015-.371-.015-.571-.015-.2 0-.522.074-.797.375-.273.3-1.045 1.019-1.045 2.487 0 1.462 1.069 2.875 1.219 3.074.149.2 2.096 3.2 5.077 4.487.712.3 1.268.48 1.704.625.714.227 1.365.195 1.88.125.57-.075 1.758-.719 2.006-1.413.248-.693.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.422 7.403h-.004a9.87 9.87 0 01-5.032-1.378l-.36-.214-3.742.982.999-3.658-.235-.374a9.86 9.86 0 01-1.51-5.26c.002-5.45 4.436-9.884 9.889-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.993c-.003 5.45-4.437 9.884-9.885 9.884m8.412-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.1.547 4.149 1.588 5.951L0 24l6.304-1.654a11.882 11.882 0 005.684 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413" fillRule="evenodd"/>
+                      </svg>
+                      {homeButtons.whatsapp.text || "Entre no Grupo VIP do WhatsApp"}
+                    </a>
+                  )}
                 </motion.div>
                 <motion.div
                   className="bg-netflix-black p-4 rounded-md"
@@ -296,9 +315,23 @@ const Home = () => {
                 >
                   <h3 className="text-xl font-bold mb-2">Materiais Exclusivos
                   </h3>
-                  <p className="text-gray-400">Apostilas, códigos e ferramentas práticas pra te ajudar a sair do zero, acelerar seu aprendizado e dar os primeiros passos rumo ao seu primeiro “sim” na programação.
-
+                  <p className="text-gray-400 mb-4">Apostilas, códigos e ferramentas práticas pra te ajudar a sair do zero, acelerar seu aprendizado e dar os primeiros passos rumo ao seu primeiro "sim" na programação.
                   </p>
+                  
+                  {/* Materials button for the card - copy of secondary button */}
+                  {homeButtons.secondary && homeButtons.secondary.enabled && (
+                    <a
+                      href={formatUrl(homeButtons.secondary.url)}
+                      target={isExternalLink(homeButtons.secondary.url) ? "_blank" : "_self"}
+                      rel={isExternalLink(homeButtons.secondary.url) ? "noopener noreferrer" : ""}
+                      className="btn-primary py-2 px-4 text-sm inline-flex items-center"
+                    >
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                      </svg>
+                      {homeButtons.secondary.text || "Materiais de Apoio"}
+                    </a>
+                  )}
                 </motion.div>
               </div>
             </div>
@@ -311,7 +344,6 @@ const Home = () => {
               transition={{ duration: 0.5, delay: 0.3 }}
             >
               <img
-                // src={currentDevflix?.instructorImage || Instrutor}
                 src={Instrutor}
                 alt="Instrutor"
                 className="w-full object-cover h-64"
@@ -319,13 +351,9 @@ const Home = () => {
               />
               <div className="p-4">
                 <h3 className="text-xl font-bold mb-1">Seu Instrutor</h3>
-                <p className="text-gray-400 mb-3">Programador Sênior
-
-                </p>
+                <p className="text-gray-400 mb-3">Programador Sênior</p>
                 <p className="text-sm text-gray-300">
                   Rodolfo Mori, fundador do DevClub, já levou mais de 15 mil alunos do zero à programação. De eletricista a Dev Sênior em empresas como Santander e BTG, hoje ensina como conquistar os melhores empregos do mercado.
-
-
                 </p>
               </div>
             </motion.div>

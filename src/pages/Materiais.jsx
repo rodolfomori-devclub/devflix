@@ -1,7 +1,8 @@
-// src/pages/Materiais.jsx (updated)
+// src/pages/Materiais.jsx (updated with WhatsApp button)
 import { motion } from 'framer-motion';
 import { useDevflix } from '../contexts/DevflixContext';
 import PromoBanner from '../components/PromoBanner';
+import FloatingWhatsAppButton from '../components/FloatingWhatsAppButton';
 
 // Ícones para os diferentes tipos de materiais
 const getIcon = (type, locked) => {
@@ -107,6 +108,7 @@ const Materiais = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-netflix-black py-20">
+        <FloatingWhatsAppButton />
         <div className="container-custom">
           <div className="max-w-4xl mx-auto bg-netflix-dark p-8 rounded-lg shadow-lg">
             <h1 className="text-2xl font-bold text-netflix-red mb-4">Erro ao carregar materiais</h1>
@@ -132,6 +134,9 @@ const Materiais = () => {
         onToggle={toggleBannerVisibility}
       />
       
+      {/* Floating WhatsApp Button */}
+      <FloatingWhatsAppButton />
+      
       <div className="container-custom pt-8">
         <motion.div 
           className="max-w-4xl mx-auto"
@@ -153,7 +158,7 @@ const Materiais = () => {
           </div>
           
           <p className="text-gray-300 mb-8">
-            Aqui você encontra todos os materiais de apoio para complementar o seu aprendizado nas aulas do evento Programador em 72hrs.
+            Aqui você encontra todos os materiais de apoio para complementar o seu aprendizado nas aulas do evento.
           </p>
           
           {materiaisAulas.map((aula, index) => (
