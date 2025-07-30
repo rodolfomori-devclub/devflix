@@ -1,9 +1,9 @@
-// src/admin/components/DevflixCard.jsx (com duplicação)
+// src/admin/components/DevflixCard.jsx (updated with clearer publication status)
 import { useState } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 
 const DevflixCard = ({ instance, onSelect, isSelected }) => {
-  const { updateDevflixInstance, deleteDevflixInstance, duplicateDevflixInstance } = useAdmin();
+  const { updateDevflixInstance, deleteDevflixInstance, duplicateDevflixInstance, togglePublishStatus } = useAdmin();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(instance.name);
   const [path, setPath] = useState(instance.path);
@@ -12,6 +12,10 @@ const DevflixCard = ({ instance, onSelect, isSelected }) => {
   const [duplicateName, setDuplicateName] = useState(`${instance.name} (cópia)`);
   const [duplicatePath, setDuplicatePath] = useState(`${instance.path}-copy`);
   const [isDuplicating, setIsDuplicating] = useState(false);
+  const [isTogglingPublish, setIsTogglingPublish] = useState(false);
+
+  // Check if the instance is published (default to true if not specified)
+  const isPublished = instance.isPublished !== false;
 
   const handleSave = () => {
     // Validar o caminho
@@ -47,6 +51,31 @@ const DevflixCard = ({ instance, onSelect, isSelected }) => {
       alert(`Erro ao duplicar: ${error.message}`);
     } finally {
       setIsDuplicating(false);
+    }
+  };
+  
+  // Handle toggling publication status
+  const handleTogglePublish = async () => {
+    try {
+      setIsTogglingPublish(true);
+      
+      // If we're going to unpublish, confirm with the user
+      if (isPublished) {
+        if (!window.confirm(`Tem certeza que deseja despublicar "${instance.name}"? Esta ação tornará a página inacessível para o público.`)) {
+          setIsTogglingPublish(false);
+          return;
+        }
+      }
+      
+      // Toggle the publication status
+      await togglePublishStatus(instance.id, !isPublished);
+      
+      // Show success message
+      alert(`DevFlix "${instance.name}" ${!isPublished ? 'publicada' : 'despublicada'} com sucesso!`);
+    } catch (error) {
+      alert(`Erro ao ${isPublished ? 'despublicar' : 'publicar'}: ${error.message}`);
+    } finally {
+      setIsTogglingPublish(false);
     }
   };
 
@@ -177,13 +206,21 @@ const DevflixCard = ({ instance, onSelect, isSelected }) => {
             </div>
             
             <div className="mt-4 flex justify-between items-center">
-              <div>
+              <div className="flex flex-wrap gap-2">
+                {/* Publication status badge - more prominent */}
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                  instance.bannerEnabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                  isPublished ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}>
+                  {isPublished ? 'Publicado' : 'Não Publicado'}
+                </span>
+                
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  instance.bannerEnabled ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
                 }`}>
                   {instance.bannerEnabled ? 'Banner Ativo' : 'Sem Banner'}
                 </span>
-                <span className="text-gray-500 text-sm ml-2">
+                
+                <span className="text-gray-500 text-sm">
                   {instance.classes.length} aulas
                 </span>
               </div>
@@ -200,18 +237,61 @@ const DevflixCard = ({ instance, onSelect, isSelected }) => {
               </button>
             </div>
             
-            <div className="mt-3 space-x-2">
-              <a 
-                href={`/${instance.path}`} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="inline-flex items-center text-sm text-gray-400 hover:text-netflix-red transition-colors"
+            {/* Publication toggle button - NEW */}
+            <div className="mt-3 flex justify-between items-center">
+              <div className="flex space-x-2">
+                <a 
+                  href={`/${instance.path}`} 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center text-sm text-gray-400 hover:text-netflix-red transition-colors"
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                  </svg>
+                  Ver site
+                </a>
+              </div>
+              
+              <button
+                onClick={handleTogglePublish}
+                disabled={isTogglingPublish}
+                className={`inline-flex items-center text-sm px-2 py-1 rounded transition-colors ${
+                  isTogglingPublish 
+                    ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                    : isPublished 
+                      ? 'bg-red-600/20 text-red-400 hover:bg-red-600/30'
+                      : 'bg-green-600/20 text-green-400 hover:bg-green-600/30'
+                }`}
               >
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                </svg>
-                Ver site
-              </a>
+                {isTogglingPublish ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processando...
+                  </span>
+                ) : (
+                  <span className="flex items-center">
+                    {isPublished ? (
+                      <>
+                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+                        </svg>
+                        Despublicar
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        Publicar
+                      </>
+                    )}
+                  </span>
+                )}
+              </button>
             </div>
           </>
         )}
