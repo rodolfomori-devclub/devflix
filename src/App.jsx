@@ -10,6 +10,7 @@ import ErrorRouteHandler from './pages/ErrorRouteHandler';
 // Lazy loaded components
 const Home = lazy(() => import('./pages/Home'));
 const Materiais = lazy(() => import('./pages/Materiais'));
+const Cronograma = lazy(() => import('./pages/Cronograma'));
 
 // Admin components - lazy loaded
 const AdminLayout = lazy(() => import('./admin/components/AdminLayout'));
@@ -17,7 +18,12 @@ const AdminHome = lazy(() => import('./admin/pages/AdminHome'));
 const AdminMaterials = lazy(() => import('./admin/pages/AdminMaterials'));
 const AdminImages = lazy(() => import('./admin/pages/AdminImages'));
 const AdminHeaderSettings = lazy(() => import('./admin/pages/AdminHeaderSettings'));
+const AdminHeaderButtons = lazy(() => import('./admin/pages/AdminHeaderButtons'));
 const AdminSettings = lazy(() => import('./admin/pages/AdminSettings'));
+const AdminInitialBanner = lazy(() => import('./admin/pages/AdminInitialBanner'));
+const AdminSchedule = lazy(() => import('./admin/pages/AdminSchedule'));
+const AdminAboutCourse = lazy(() => import('./admin/pages/AdminAboutCourse'));
+const BannerPreview = lazy(() => import('./admin/pages/BannerPreview'));
 const Login = lazy(() => import('./admin/pages/Login'));
 const ProtectedRoute = lazy(() => import('./admin/components/ProtectedRoute'));
 
@@ -132,11 +138,46 @@ function App() {
                       <AdminHeaderSettings />
                     </Suspense>
                   } />
+                  <Route path="header-buttons" element={
+                    <Suspense fallback={<div className="h-screen bg-netflix-black flex items-center justify-center">
+                      <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-netflix-red rounded-full"></div>
+                    </div>}>
+                      <AdminHeaderButtons />
+                    </Suspense>
+                  } />
                   <Route path="settings" element={
                     <Suspense fallback={<div className="h-screen bg-netflix-black flex items-center justify-center">
                       <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-netflix-red rounded-full"></div>
                     </div>}>
                       <AdminSettings />
+                    </Suspense>
+                  } />
+                  <Route path="initial-banner" element={
+                    <Suspense fallback={<div className="h-screen bg-netflix-black flex items-center justify-center">
+                      <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-netflix-red rounded-full"></div>
+                    </div>}>
+                      <AdminInitialBanner />
+                    </Suspense>
+                  } />
+                  <Route path="banner-preview" element={
+                    <Suspense fallback={<div className="h-screen bg-netflix-black flex items-center justify-center">
+                      <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-netflix-red rounded-full"></div>
+                    </div>}>
+                      <BannerPreview />
+                    </Suspense>
+                  } />
+                  <Route path="schedule" element={
+                    <Suspense fallback={<div className="h-screen bg-netflix-black flex items-center justify-center">
+                      <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-netflix-red rounded-full"></div>
+                    </div>}>
+                      <AdminSchedule />
+                    </Suspense>
+                  } />
+                  <Route path="about-course" element={
+                    <Suspense fallback={<div className="h-screen bg-netflix-black flex items-center justify-center">
+                      <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-netflix-red rounded-full"></div>
+                    </div>}>
+                      <AdminAboutCourse />
                     </Suspense>
                   } />
                 </Route>
@@ -166,6 +207,21 @@ function App() {
                       <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-netflix-red rounded-full"></div>
                     </div>}>
                       <Materiais />
+                    </Suspense>
+                  </main>
+                  <Footer />
+                </DevflixProvider>
+              } />
+
+              {/* Schedule routes */}
+              <Route path="/:path/cronograma" element={
+                <DevflixProvider>
+                  <Navbar />
+                  <main className="flex-grow">
+                    <Suspense fallback={<div className="h-screen bg-netflix-black flex items-center justify-center">
+                      <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-netflix-red rounded-full"></div>
+                    </div>}>
+                      <Cronograma />
                     </Suspense>
                   </main>
                   <Footer />

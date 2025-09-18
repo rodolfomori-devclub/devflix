@@ -12,7 +12,7 @@ const Navbar = () => {
   const location = useLocation();
   
   // Obtém informações do contexto DevFlix
-  const { bannerEnabled, bannerVisible, currentDevflix } = useDevflix();
+  const { bannerEnabled, bannerVisible, currentDevflix, headerButtonsConfig } = useDevflix();
   
   // Obter links do header dinamicamente
   const headerLinks = currentDevflix?.headerLinks || [];
@@ -108,6 +108,7 @@ const Navbar = () => {
   // Verificar se link está fixo ou não
   const isHomeLinkActive = location.pathname === basePath;
   const isMaterialsLinkActive = location.pathname.includes('/materiais');
+  const isCronogramaLinkActive = location.pathname.includes('/cronograma');
   
   return (
     <>
@@ -127,78 +128,103 @@ const Navbar = () => {
           
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-8">
-            {/* Links fixos + links personalizados */}
-            <Link 
-              to={basePath} 
-              className={`hover:text-netflix-red transition-colors ${
-                isHomeLinkActive ? 'text-netflix-red font-medium' : 'text-white'
-              }`}
-            >
-              Home
-            </Link>
+            {/* Home Link */}
+            {headerButtonsConfig?.home?.enabled && (
+              <Link 
+                to={basePath} 
+                className={`hover:text-netflix-red transition-colors ${
+                  isHomeLinkActive ? 'text-netflix-red font-medium' : 'text-white'
+                }`}
+              >
+                {headerButtonsConfig.home.label}
+              </Link>
+            )}
             
-            <Link 
-              to={`${basePath}/materiais`} 
-              className={`hover:text-netflix-red transition-colors ${
-                isMaterialsLinkActive ? 'text-netflix-red font-medium' : 'text-white'
-              }`}
-            >
-              Materiais de Apoio
-            </Link>
+            {/* Materiais Link */}
+            {headerButtonsConfig?.materiais?.enabled && (
+              <Link 
+                to={`${basePath}/materiais`} 
+                className={`hover:text-netflix-red transition-colors ${
+                  isMaterialsLinkActive ? 'text-netflix-red font-medium' : 'text-white'
+                }`}
+              >
+                {headerButtonsConfig.materiais.label}
+              </Link>
+            )}
+            
+            {/* Cronograma Link */}
+            {headerButtonsConfig?.cronograma?.enabled && (
+              <Link 
+                to={`${basePath}/cronograma`} 
+                className={`hover:text-netflix-red transition-colors ${
+                  isCronogramaLinkActive ? 'text-netflix-red font-medium' : 'text-white'
+                }`}
+              >
+                {headerButtonsConfig.cronograma.label}
+              </Link>
+            )}
             
             {/* Links personalizados */}
             {renderCustomLinks()}
             
-            {/* NOVIDADE: Botão "Nossos Alunos" */}
-            <a
-              href="https://stars.devclub.com.br"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-white hover:bg-gray-200 text-netflix-red py-1.5 px-4 rounded-md transition-all duration-200 flex items-center space-x-1"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
-              </svg>
-              <span>Nossos Alunos</span>
-            </a>
+            {/* Botão "Nossos Alunos" */}
+            {headerButtonsConfig?.nossosAlunos?.enabled && (
+              <a
+                href={headerButtonsConfig.nossosAlunos.url || "https://stars.devclub.com.br"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-white hover:bg-gray-200 text-netflix-red py-1.5 px-4 rounded-md transition-all duration-200 flex items-center space-x-1"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                </svg>
+                <span>{headerButtonsConfig.nossosAlunos.label}</span>
+              </a>
+            )}
             
-            {/* Botão de chat com IA (sempre visível) */}
-            <button
-              onClick={toggleAiModal}
-              className="bg-netflix-red hover:bg-red-700 text-white py-1.5 px-4 rounded-md transition-all duration-200 flex items-center space-x-1"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
-              </svg>
-              <span>Fale com a IA</span>
-            </button>
+            {/* Botão de chat com IA */}
+            {headerButtonsConfig?.aiChat?.enabled && (
+              <button
+                onClick={toggleAiModal}
+                className="bg-netflix-red hover:bg-red-700 text-white py-1.5 px-4 rounded-md transition-all duration-200 flex items-center space-x-1"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+                </svg>
+                <span>{headerButtonsConfig.aiChat.label}</span>
+              </button>
+            )}
           </div>
           
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center space-x-2">
             {/* Botão de Nossos Alunos para mobile */}
-            <a
-              href="https://stars.devclub.com.br"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-white hover:bg-gray-200 text-netflix-red p-1.5 rounded-md transition-colors"
-              aria-label="Nossos Alunos"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
-              </svg>
-            </a>
+            {headerButtonsConfig?.nossosAlunos?.enabled && (
+              <a
+                href={headerButtonsConfig.nossosAlunos.url || "https://stars.devclub.com.br"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-white hover:bg-gray-200 text-netflix-red p-1.5 rounded-md transition-colors"
+                aria-label={headerButtonsConfig.nossosAlunos.label}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                </svg>
+              </a>
+            )}
           
             {/* Botão de IA para mobile */}
-            <button
-              onClick={toggleAiModal}
-              className="bg-netflix-red hover:bg-red-700 text-white p-1.5 rounded-md transition-colors"
-              aria-label="Fale com a IA"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
-              </svg>
-            </button>
+            {headerButtonsConfig?.aiChat?.enabled && (
+              <button
+                onClick={toggleAiModal}
+                className="bg-netflix-red hover:bg-red-700 text-white p-1.5 rounded-md transition-colors"
+                aria-label={headerButtonsConfig.aiChat.label}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+                </svg>
+              </button>
+            )}
             
             <button 
               className="text-white focus:outline-none"
@@ -226,40 +252,60 @@ const Navbar = () => {
               transition={{ duration: 0.3 }}
             >
               <div className="container-custom py-4 space-y-4">
-                {/* Links fixos para mobile */}
-                <Link 
-                  to={basePath} 
-                  className={`block py-2 ${
-                    isHomeLinkActive ? 'text-netflix-red font-medium' : 'text-white'
-                  }`}
-                  onClick={() => setMenuOpen(false)}
-                >
-                  Home
-                </Link>
+                {/* Home Link para mobile */}
+                {headerButtonsConfig?.home?.enabled && (
+                  <Link 
+                    to={basePath} 
+                    className={`block py-2 ${
+                      isHomeLinkActive ? 'text-netflix-red font-medium' : 'text-white'
+                    }`}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {headerButtonsConfig.home.label}
+                  </Link>
+                )}
                 
-                <Link 
-                  to={`${basePath}/materiais`} 
-                  className={`block py-2 ${
-                    isMaterialsLinkActive ? 'text-netflix-red font-medium' : 'text-white'
-                  }`}
-                  onClick={() => setMenuOpen(false)}
-                >
-                  Materiais de Apoio
-                </Link>
+                {/* Materiais Link para mobile */}
+                {headerButtonsConfig?.materiais?.enabled && (
+                  <Link 
+                    to={`${basePath}/materiais`} 
+                    className={`block py-2 ${
+                      isMaterialsLinkActive ? 'text-netflix-red font-medium' : 'text-white'
+                    }`}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {headerButtonsConfig.materiais.label}
+                  </Link>
+                )}
+                
+                {/* Cronograma Link para mobile */}
+                {headerButtonsConfig?.cronograma?.enabled && (
+                  <Link 
+                    to={`${basePath}/cronograma`} 
+                    className={`block py-2 ${
+                      isCronogramaLinkActive ? 'text-netflix-red font-medium' : 'text-white'
+                    }`}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {headerButtonsConfig.cronograma.label}
+                  </Link>
+                )}
                 
                 {/* Links personalizados para mobile */}
                 {renderCustomLinks(true)}
                 
-                {/* Adicionar link Nossos Alunos no menu mobile */}
-                <a 
-                  href="https://stars.devclub.com.br"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block py-2 text-white hover:text-netflix-red transition-colors"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  Nossos Alunos
-                </a>
+                {/* Nossos Alunos no menu mobile */}
+                {headerButtonsConfig?.nossosAlunos?.enabled && (
+                  <a 
+                    href={headerButtonsConfig.nossosAlunos.url || "https://stars.devclub.com.br"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block py-2 text-white hover:text-netflix-red transition-colors"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {headerButtonsConfig.nossosAlunos.label}
+                  </a>
+                )}
               </div>
             </motion.div>
           )}

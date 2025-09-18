@@ -14,7 +14,8 @@ import {
   duplicateDevflixInstance as duplicateDevflixInFirebase,
   updateClassMaterials,
   updateClassInfo,
-  updateBannerSettings
+  updateBannerSettings,
+  updateInitialBannerSettings
 } from '../../firebase/firebaseService';
 import { 
   updateHeaderLinks as updateHeaderLinksInFirebase,
@@ -411,6 +412,36 @@ export const AdminProvider = ({ children }) => {
     }
   };
 
+  // Função para atualizar o banner inicial
+  const updateInitialBanner = async (bannerData) => {
+    if (!currentDevflix) return;
+    
+    try {
+      const updatedBanner = { 
+        ...(currentDevflix.initialBanner || {}), 
+        ...bannerData 
+      };
+      
+      // Atualizar no Firebase
+      await updateInitialBannerSettings(currentDevflix.id, updatedBanner);
+      
+      // Atualizar estado local
+      const updated = { ...currentDevflix, initialBanner: updatedBanner };
+      setCurrentDevflix(updated);
+      
+      // Atualizar a lista de instâncias
+      setDevflixInstances(prev => prev.map(instance => 
+        instance.id === currentDevflix.id ? updated : instance
+      ));
+      
+      return true;
+    } catch (err) {
+      console.error('Erro ao atualizar banner inicial:', err);
+      setError('Falha ao atualizar banner inicial.');
+      throw err;
+    }
+  };
+
   const updateHeaderLinks = async (links) => {
     if (!currentDevflix) return;
     
@@ -478,6 +509,7 @@ export const AdminProvider = ({ children }) => {
     updateClass,
     updateBanner,
     toggleBanner,
+    updateInitialBanner,
     updateHeaderLinks,
     togglePublishStatus,
     updateHomeButtons

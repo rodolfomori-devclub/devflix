@@ -5,9 +5,10 @@ import CourseCard from '../components/CourseCard';
 import PromoBanner from '../components/PromoBanner';
 import BackgroundVideo from '../components/BackgroundVideo';
 import FloatingWhatsAppButton from '../components/FloatingWhatsAppButton';
+import InitialBanner from '../components/InitialBanner';
+import AboutCourse from '../components/AboutCourse';
 import { useDevflix } from '../contexts/DevflixContext';
 import VideoSrc from '../assets/devflix.mp4'
-import Instrutor from '../assets/instrutor.png'
 
 // Memoized CourseCard to prevent unnecessary re-renders
 const MemoizedCourseCard = memo(CourseCard);
@@ -22,7 +23,8 @@ const Home = () => {
     isLoading,
     error,
     path,
-    currentDevflix
+    currentDevflix,
+    headerButtonsConfig
   } = useDevflix();
 
   // Track loading state for video/image resources
@@ -112,6 +114,12 @@ const Home = () => {
 
   return (
     <div className={`min-h-screen ${contentPaddingTop}`}>
+      {/* Banner inicial */}
+      <InitialBanner 
+        bannerData={currentDevflix?.initialBanner}
+        instancePath={path}
+      />
+
       {/* Banner promocional */}
       <PromoBanner
         banner={banner}
@@ -247,119 +255,63 @@ const Home = () => {
         </BackgroundVideo>
       </div>
 
-      {/* About section - lazy loaded */}
-      <section className="py-16 bg-netflix-dark">
-        <div className="container-custom">
-          <div className="flex flex-col md:flex-row gap-10">
-            <div className="md:w-2/3">
+      {/* Cronograma CTA section - Only visible if cronograma button is enabled */}
+      {headerButtonsConfig?.cronograma?.enabled && (
+        <section className="py-16 bg-gradient-to-r from-netflix-red to-red-800">
+          <div className="container-custom">
+            <div className="text-center">
               <motion.h2
-                className="section-header mb-6"
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
+                className="text-4xl md:text-5xl font-bold mb-4"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5 }}
               >
-                Sobre o curso
+                📅 Cronograma Completo
               </motion.h2>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
+              <motion.p
+                className="text-xl mb-8 opacity-90"
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+              >
+                Veja todas as aulas organizadas por dia da semana
+              </motion.p>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.2 }}
               >
-                <p className="text-gray-300 mb-4">
-                  Criada por Rodolfo Mori, ex-eletricista que se tornou programador sênior em empresas como Santander, BTG Pactual, PI Investimentos e Toro Investimentos, a Formação DevClub Full Stack já ajudou mais de 15 mil alunos a saírem do zero e conquistarem seus primeiros empregos na programação, muitos faturando entre R$5 mil e R$20 mil por mês.
-
-                  Com uma metodologia direta ao ponto, suporte 7 dias por semana, mentorias ao vivo e acompanhamento com recrutadora, o DevClub oferece tudo o que o mercado realmente exige para quem quer transformar a própria carreira, mesmo sem experiência, faculdade ou computador de última geração.
-                </p>
-                <p className="text-gray-300 mb-4">
-                  Aprenda estratégias avançadas de configuração de campanhas, segmentação de audiência,
-                  otimização de conversões e muito mais!
-                </p>
+                <a
+                  href={`${basePath}/cronograma`}
+                  className="inline-flex items-center px-8 py-4 bg-white text-netflix-red font-bold text-lg rounded-lg hover:bg-gray-100 transition-all transform hover:scale-105 shadow-2xl"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                  </svg>
+                  Ver Cronograma Completo
+                </a>
               </motion.div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
-                <motion.div
-                  className="bg-netflix-black p-4 rounded-md"
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
-                >
-                  <h3 className="text-xl font-bold mb-2">Entre no Grupo VIP do Whatsapp
-                  </h3>
-                  <p className="text-gray-400 mb-4">Clique abaixo e entre no meu grupo exclusivo no Whatsapp para ter acesso aos avisos, atualizações e à condição exclusiva da Formação de programadores DevClub Full Stack.
-                  </p>
-                  
-                  {/* WhatsApp button for the card - copy of main whatsapp button */}
-                  {homeButtons.whatsapp && homeButtons.whatsapp.enabled && (
-                    <a
-                      href={homeButtons.whatsapp.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 text-sm rounded flex items-center w-max"
-                    >
-                      <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M17.498 14.382c-.301-.15-1.767-.867-2.04-.966-.273-.101-.473-.15-.673.15-.197.3-.77.966-.944 1.164-.175.2-.349.223-.647.075-.3-.15-1.269-.465-2.411-1.485-.897-.8-1.502-1.788-1.674-2.085-.172-.3-.018-.465.13-.61.134-.133.3-.347.448-.522.15-.17.2-.3.3-.498.099-.2.05-.375-.025-.522-.075-.15-.672-1.621-.922-2.22-.24-.6-.487-.51-.672-.51-.172-.015-.371-.015-.571-.015-.2 0-.522.074-.797.375-.273.3-1.045 1.019-1.045 2.487 0 1.462 1.069 2.875 1.219 3.074.149.2 2.096 3.2 5.077 4.487.712.3 1.268.48 1.704.625.714.227 1.365.195 1.88.125.57-.075 1.758-.719 2.006-1.413.248-.693.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.422 7.403h-.004a9.87 9.87 0 01-5.032-1.378l-.36-.214-3.742.982.999-3.658-.235-.374a9.86 9.86 0 01-1.51-5.26c.002-5.45 4.436-9.884 9.889-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.993c-.003 5.45-4.437 9.884-9.885 9.884m8.412-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.1.547 4.149 1.588 5.951L0 24l6.304-1.654a11.882 11.882 0 005.684 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413" fillRule="evenodd"/>
-                      </svg>
-                      {homeButtons.whatsapp.text || "Entre no Grupo VIP do WhatsApp"}
-                    </a>
-                  )}
-                </motion.div>
-                <motion.div
-                  className="bg-netflix-black p-4 rounded-md"
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: 0.4 }}
-                >
-                  <h3 className="text-xl font-bold mb-2">Materiais Exclusivos
-                  </h3>
-                  <p className="text-gray-400 mb-4">Apostilas, códigos e ferramentas práticas pra te ajudar a sair do zero, acelerar seu aprendizado e dar os primeiros passos rumo ao seu primeiro "sim" na programação.
-                  </p>
-                  
-                  {/* Materials button for the card - copy of secondary button */}
-                  {homeButtons.secondary && homeButtons.secondary.enabled && (
-                    <a
-                      href={formatUrl(homeButtons.secondary.url)}
-                      target={isExternalLink(homeButtons.secondary.url) ? "_blank" : "_self"}
-                      rel={isExternalLink(homeButtons.secondary.url) ? "noopener noreferrer" : ""}
-                      className="btn-primary py-2 px-4 text-sm inline-flex items-center"
-                    >
-                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                      </svg>
-                      {homeButtons.secondary.text || "Materiais de Apoio"}
-                    </a>
-                  )}
-                </motion.div>
-              </div>
+              <motion.div
+                className="mt-6 flex justify-center space-x-4 text-sm opacity-80"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+              >
+                <span>📍 4 Aulas Principais</span>
+                <span>⭐ 1 Aula Bônus</span>
+                <span>🎯 Horários Detalhados</span>
+              </motion.div>
             </div>
-
-            <motion.div
-              className="md:w-1/3 bg-netflix-black rounded-md overflow-hidden"
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
-              <img
-                src={Instrutor}
-                alt="Instrutor"
-                className="w-full object-cover h-64"
-                loading="lazy" // Lazy load this image
-              />
-              <div className="p-4">
-                <h3 className="text-xl font-bold mb-1">Seu Instrutor</h3>
-                <p className="text-gray-400 mb-3">Programador Sênior</p>
-                <p className="text-sm text-gray-300">
-                  Rodolfo Mori, fundador do DevClub, já levou mais de 15 mil alunos do zero à programação. De eletricista a Dev Sênior em empresas como Santander e BTG, hoje ensina como conquistar os melhores empregos do mercado.
-                </p>
-              </div>
-            </motion.div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
+
+      {/* About Course component - lazy loaded */}
+      <AboutCourse aboutData={currentDevflix?.aboutCourse} homeButtons={homeButtons} />
     </div>
   );
 };

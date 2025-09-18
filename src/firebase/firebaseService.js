@@ -35,6 +35,147 @@ export const updateHomeButtons = async (instanceId, buttonsData) => {
   }
 };
 
+// Update schedule "Comece por AQUI" data
+export const updateScheduleStartData = async (instanceId, startMapData) => {
+  try {
+    const docRef = doc(devflixCollection, instanceId);
+    await updateDoc(docRef, { 
+      scheduleStartData: startMapData,
+      updatedAt: serverTimestamp()
+    });
+    return true;
+  } catch (error) {
+    console.error("Erro ao atualizar dados do cronograma inicial:", error);
+    throw error;
+  }
+};
+
+// Get about course data
+export const getAboutCourse = async (instanceId) => {
+  try {
+    const docRef = doc(devflixCollection, instanceId);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return data.aboutCourse || null;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error("Erro ao obter dados sobre o curso:", error);
+    throw error;
+  }
+};
+
+// Update about course data
+export const updateAboutCourse = async (instanceId, aboutData) => {
+  try {
+    const docRef = doc(devflixCollection, instanceId);
+    await updateDoc(docRef, { 
+      aboutCourse: aboutData,
+      updatedAt: serverTimestamp()
+    });
+    return true;
+  } catch (error) {
+    console.error("Erro ao atualizar dados sobre o curso:", error);
+    throw error;
+  }
+};
+
+// Get schedule "Comece por AQUI" data
+export const getScheduleStartData = async (instanceId) => {
+  try {
+    const docRef = doc(devflixCollection, instanceId);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return data.scheduleStartData || [];
+    }
+    return [];
+  } catch (error) {
+    console.error("Erro ao obter dados do cronograma inicial:", error);
+    throw error;
+  }
+};
+
+// Update schedule complete data
+export const updateScheduleData = async (instanceId, scheduleData) => {
+  try {
+    const docRef = doc(devflixCollection, instanceId);
+    await updateDoc(docRef, { 
+      scheduleData: scheduleData,
+      updatedAt: serverTimestamp()
+    });
+    return true;
+  } catch (error) {
+    console.error("Erro ao atualizar dados do cronograma:", error);
+    throw error;
+  }
+};
+
+// Get schedule complete data
+export const getScheduleData = async (instanceId) => {
+  try {
+    const docRef = doc(devflixCollection, instanceId);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return data.scheduleData || [];
+    }
+    return [];
+  } catch (error) {
+    console.error("Erro ao obter dados do cronograma:", error);
+    throw error;
+  }
+};
+
+// Update header buttons configuration
+export const updateHeaderButtonsConfig = async (instanceId, buttonsConfig) => {
+  try {
+    const docRef = doc(devflixCollection, instanceId);
+    await updateDoc(docRef, { 
+      headerButtonsConfig: buttonsConfig,
+      updatedAt: serverTimestamp()
+    });
+    return true;
+  } catch (error) {
+    console.error("Erro ao atualizar configuração dos botões do header:", error);
+    throw error;
+  }
+};
+
+// Get header buttons configuration
+export const getHeaderButtonsConfig = async (instanceId) => {
+  try {
+    const docRef = doc(devflixCollection, instanceId);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return data.headerButtonsConfig || {
+        home: { enabled: true, label: 'Home' },
+        materiais: { enabled: true, label: 'Materiais de Apoio' },
+        cronograma: { enabled: true, label: 'Cronograma' },
+        nossosAlunos: { enabled: true, label: 'Nossos Alunos', url: 'https://stars.devclub.com.br' },
+        aiChat: { enabled: true, label: 'Fale com a IA' }
+      };
+    }
+    return {
+      home: { enabled: true, label: 'Home' },
+      materiais: { enabled: true, label: 'Materiais de Apoio' },
+      cronograma: { enabled: true, label: 'Cronograma' },
+      nossosAlunos: { enabled: true, label: 'Nossos Alunos', url: 'https://stars.devclub.com.br' },
+      aiChat: { enabled: true, label: 'Fale com a IA' }
+    };
+  } catch (error) {
+    console.error("Erro ao obter configuração dos botões do header:", error);
+    throw error;
+  }
+};
+
 // Obter todas as instâncias da DevFlix
 export const getAllDevflixInstances = async () => {
   try {
@@ -427,6 +568,36 @@ export const updateBannerSettings = async (instanceId, bannerData, enabled) => {
     return true;
   } catch (error) {
     console.error("Erro ao atualizar banner:", error);
+    throw error;
+  }
+};
+
+// Atualizar configurações do banner inicial
+export const updateInitialBannerSettings = async (instanceId, bannerData) => {
+  try {
+    await updateDevflixInstance(instanceId, {
+      initialBanner: {
+        enabled: bannerData.enabled || false,
+        displayMode: bannerData.displayMode || 'always', // 'always' ou 'once'
+        visualMode: bannerData.visualMode || 'transparent', // 'transparent', 'blur', 'solid'
+        title: bannerData.title || '',
+        text: bannerData.text || '',
+        image: bannerData.image || '',
+        video: bannerData.video || '',
+        buttonText: bannerData.buttonText || '',
+        buttonLink: bannerData.buttonLink || '',
+        titleColor: bannerData.titleColor || '#ffffff',
+        textColor: bannerData.textColor || '#ffffff',
+        buttonTextColor: bannerData.buttonTextColor || '#ffffff',
+        buttonBgColor: bannerData.buttonBgColor || '#e50914',
+        bgColor: bannerData.bgColor || '#000000',
+        opacity: bannerData.opacity || 0.9,
+        blurAmount: bannerData.blurAmount || 10
+      }
+    });
+    return true;
+  } catch (error) {
+    console.error("Erro ao atualizar banner inicial:", error);
     throw error;
   }
 };

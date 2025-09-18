@@ -15,6 +15,7 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
+        'aldrich': ['Aldrich', 'sans-serif'],
       },
       animation: {
         'code-scroll': 'code-scroll 20s linear infinite',

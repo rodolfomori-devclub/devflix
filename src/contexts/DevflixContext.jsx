@@ -1,7 +1,7 @@
 // src/contexts/DevflixContext.jsx (optimized)
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getDevflixByPath } from '../firebase/firebaseService';
+import { getDevflixByPath, getHeaderButtonsConfig } from '../firebase/firebaseService';
 
 // Create the context
 const DevflixContext = createContext();
@@ -15,6 +15,7 @@ export const DevflixProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [bannerVisible, setBannerVisible] = useState(true);
   const [dataInitialized, setDataInitialized] = useState(false);
+  const [headerButtonsConfig, setHeaderButtonsConfig] = useState(null);
   
   // Load data - optimized with useEffect
   useEffect(() => {
@@ -72,6 +73,24 @@ export const DevflixProvider = ({ children }) => {
           // Update state with fresh data
           setCurrentDevflix(freshData);
           
+          // Load header buttons configuration
+          try {
+            const buttonsConfig = await getHeaderButtonsConfig(freshData.id);
+            if (isMounted) {
+              setHeaderButtonsConfig(buttonsConfig);
+            }
+          } catch (configError) {
+            console.warn('Error loading header buttons config:', configError);
+            // Set default config if loading fails
+            setHeaderButtonsConfig({
+              home: { enabled: true, label: 'Home' },
+              materiais: { enabled: true, label: 'Materiais de Apoio' },
+              cronograma: { enabled: true, label: 'Cronograma' },
+              nossosAlunos: { enabled: true, label: 'Nossos Alunos', url: 'https://stars.devclub.com.br' },
+              aiChat: { enabled: true, label: 'Fale com a IA' }
+            });
+          }
+          
           // Cache the data for faster loading next time
           sessionStorage.setItem(`devflix-${path}`, JSON.stringify(freshData));
           
@@ -119,6 +138,7 @@ export const DevflixProvider = ({ children }) => {
     toggleBannerVisibility,
     classes: currentDevflix?.classes || [],
     materials: currentDevflix?.materials || [],
+    headerButtonsConfig,
     path
   }), [
     currentDevflix,
@@ -126,6 +146,7 @@ export const DevflixProvider = ({ children }) => {
     error,
     bannerVisible,
     toggleBannerVisibility,
+    headerButtonsConfig,
     path
   ]);
   

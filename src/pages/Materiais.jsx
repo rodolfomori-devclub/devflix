@@ -137,7 +137,7 @@ const Materiais = () => {
       {/* Floating WhatsApp Button */}
       <FloatingWhatsAppButton />
       
-      <div className="container-custom pt-8">
+      <div className="container-custom pt-24">
         <motion.div 
           className="max-w-4xl mx-auto"
           initial={{ opacity: 0, y: 20 }}
