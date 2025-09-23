@@ -1,48 +1,38 @@
 // src/components/SchedulerChecker.jsx
-import { useEffect, useState } from 'react';
-import { 
-  checkAndActivateScheduledItems 
-} from '../firebase/schedulerService';
+import { useEffect, useRef } from 'react';
+import schedulerService from '../services/schedulerService';
 
 /**
- * Componente global para verificar e processar agendamentos de banners e materiais
- * Este componente roda em background para assegurar que todos os conteúdos
- * agendados sejam ativados no horário correto, mesmo que o usuário não esteja
- * na página de edição.
+ * Componente global para gerenciar o serviço de agendamento
+ * Este componente inicializa e gerencia o serviço que verifica e processa 
+ * agendamentos de banners e materiais em background.
  */
 const SchedulerChecker = () => {
-  const [lastCheckTime, setLastCheckTime] = useState(null);
+  const serviceStartedRef = useRef(false);
   
   useEffect(() => {
-    // Função para verificar todos os agendamentos em todo o banco
-    const checkAllSchedules = async () => {
-      try {
-        const now = new Date();
-        console.log(`[SchedulerChecker] Verificando agendamentos: ${now.toLocaleString()}`);
-        
-        // Chamar o serviço para verificar e ativar itens agendados
-        const result = await checkAndActivateScheduledItems();
-        
-        if (result.itemsActivated > 0) {
-          console.log(`[SchedulerChecker] ${result.itemsActivated} itens ativados: ${
-            result.activatedTypes.join(', ')
-          }`);
-        }
-        
-        setLastCheckTime(now);
-      } catch (error) {
-        console.error("[SchedulerChecker] Erro ao verificar agendamentos:", error);
-      }
+    // Evitar inicialização duplicada
+    if (serviceStartedRef.current) {
+      return;
+    }
+    
+    serviceStartedRef.current = true;
+    
+    console.log('[SchedulerChecker] Iniciando serviço de agendamento...');
+    
+    // Iniciar o serviço de agendamento
+    schedulerService.start();
+    
+    // Verificar status do serviço
+    const status = schedulerService.getStatus();
+    console.log('[SchedulerChecker] Status do serviço:', status);
+    
+    // Cleanup - parar o serviço quando o componente for desmontado
+    return () => {
+      console.log('[SchedulerChecker] Parando serviço de agendamento...');
+      schedulerService.stop();
+      serviceStartedRef.current = false;
     };
-    
-    // Verificar imediatamente ao montar o componente
-    checkAllSchedules();
-    
-    // Configurar verificação periódica a cada 15 segundos
-    const intervalId = setInterval(checkAllSchedules, 15000);
-    
-    // Limpar intervalo ao desmontar
-    return () => clearInterval(intervalId);
   }, []);
   
   // Este componente não renderiza nada visível

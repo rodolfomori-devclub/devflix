@@ -2,6 +2,8 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getDevflixByPath, getHeaderButtonsConfig } from '../firebase/firebaseService';
+import eventBus, { MATERIAL_EVENTS } from '../services/eventBus';
+import cacheService from '../services/cacheService';
 
 // Create the context
 const DevflixContext = createContext();
@@ -35,21 +37,46 @@ export const DevflixProvider = ({ children }) => {
           return;
         }
         
-        // Attempt to load from cache first to improve performance
+        // Check cache validity before using
         const cachedData = sessionStorage.getItem(`devflix-${path}`);
         let devflixData;
+        let useCachedData = false;
         
         if (cachedData) {
           try {
-            // Use cached data first for immediate rendering
             devflixData = JSON.parse(cachedData);
-            if (isMounted) {
+            
+            // Validate cached data isn't stale (materials with past scheduled unlocks)
+            const now = new Date().getTime();
+            let hasStaleData = false;
+            
+            if (devflixData.materials) {
+              devflixData.materials.forEach(classM => {
+                if (classM.items) {
+                  classM.items.forEach(item => {
+                    if (item.locked && item.scheduledUnlock) {
+                      const unlockTime = new Date(item.scheduledUnlock).getTime();
+                      if (unlockTime <= now) {
+                        hasStaleData = true;
+                      }
+                    }
+                  });
+                }
+              });
+            }
+            
+            // Only use cache if it's not stale
+            if (!hasStaleData && isMounted) {
               setCurrentDevflix(devflixData);
               setIsLoading(false);
+              useCachedData = true;
+            } else if (hasStaleData) {
+              console.log('[DevflixContext] Cache has stale scheduled unlocks, fetching fresh data');
+              sessionStorage.removeItem(`devflix-${path}`);
             }
           } catch (error) {
             console.warn('Error parsing cached data:', error);
-            // Continue to fetch from Firebase
+            sessionStorage.removeItem(`devflix-${path}`);
           }
         }
         
@@ -117,8 +144,31 @@ export const DevflixProvider = ({ children }) => {
     
     fetchData();
     
+    // Listen for data refresh events
+    const handleRefresh = eventBus.on(MATERIAL_EVENTS.DATA_REFRESH_NEEDED, async (data) => {
+      if (data.path === path) {
+        console.log('[DevflixContext] Refreshing data due to scheduled unlock');
+        
+        // Clear cache
+        cacheService.invalidate(`devflix-${path}`);
+        sessionStorage.removeItem(`devflix-${path}`);
+        
+        // Fetch fresh data
+        try {
+          const freshData = await getDevflixByPath(path);
+          if (isMounted && freshData) {
+            setCurrentDevflix(freshData);
+            sessionStorage.setItem(`devflix-${path}`, JSON.stringify(freshData));
+          }
+        } catch (error) {
+          console.error('[DevflixContext] Error refreshing data:', error);
+        }
+      }
+    });
+    
     return () => {
       isMounted = false;
+      handleRefresh();
     };
   }, [path, navigate, dataInitialized]);
   

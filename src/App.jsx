@@ -32,6 +32,7 @@ import { AdminProvider } from './admin/contexts/AdminContext';
 import { DevflixProvider } from './contexts/DevflixContext';
 import { AuthProvider } from './contexts/AuthContext';
 import SchedulerChecker from './components/SchedulerChecker';
+import MaterialsUnlockChecker from './components/MaterialsUnlockChecker';
 
 // Simplified Aula Page Component
 const AulaPage = ({ match }) => {
@@ -186,6 +187,7 @@ function App() {
               {/* DevFlix Routes */}
               <Route path="/:path" element={
                 <DevflixProvider>
+                  <MaterialsUnlockChecker />
                   <Navbar />
                   <main className="flex-grow">
                     <Suspense fallback={<div className="h-screen bg-netflix-black flex items-center justify-center">
@@ -201,6 +203,7 @@ function App() {
               {/* Materials routes */}
               <Route path="/:path/materiais" element={
                 <DevflixProvider>
+                  <MaterialsUnlockChecker />
                   <Navbar />
                   <main className="flex-grow">
                     <Suspense fallback={<div className="h-screen bg-netflix-black flex items-center justify-center">
@@ -216,6 +219,7 @@ function App() {
               {/* Schedule routes */}
               <Route path="/:path/cronograma" element={
                 <DevflixProvider>
+                  <MaterialsUnlockChecker />
                   <Navbar />
                   <main className="flex-grow">
                     <Suspense fallback={<div className="h-screen bg-netflix-black flex items-center justify-center">
