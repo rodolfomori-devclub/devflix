@@ -23,6 +23,7 @@ const AdminSettings = lazy(() => import('./admin/pages/AdminSettings'));
 const AdminInitialBanner = lazy(() => import('./admin/pages/AdminInitialBanner'));
 const AdminSchedule = lazy(() => import('./admin/pages/AdminSchedule'));
 const AdminAboutCourse = lazy(() => import('./admin/pages/AdminAboutCourse'));
+const AdminTexts = lazy(() => import('./admin/pages/AdminTexts'));
 const BannerPreview = lazy(() => import('./admin/pages/BannerPreview'));
 const Login = lazy(() => import('./admin/pages/Login'));
 const ProtectedRoute = lazy(() => import('./admin/components/ProtectedRoute'));
@@ -179,6 +180,13 @@ function App() {
                       <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-netflix-red rounded-full"></div>
                     </div>}>
                       <AdminAboutCourse />
+                    </Suspense>
+                  } />
+                  <Route path="texts" element={
+                    <Suspense fallback={<div className="h-screen bg-netflix-black flex items-center justify-center">
+                      <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-netflix-red rounded-full"></div>
+                    </div>}>
+                      <AdminTexts />
                     </Suspense>
                   } />
                 </Route>
