@@ -61,25 +61,32 @@ const getIcon = (type, locked) => {
 };
 
 const Materiais = () => {
-  const { 
-    classes, 
-    materials, 
-    banner, 
-    bannerEnabled, 
+  const {
+    classes,
+    materials,
+    banner,
+    bannerEnabled,
     bannerVisible,
     toggleBannerVisibility,
-    isLoading, 
-    error, 
+    countdownVisible,
+    isLoading,
+    error,
     path,
     currentDevflix
   } = useDevflix();
-  
+
   // Usa o path do contexto para garantir consistência nas rotas
   const basePath = path ? `/${path}` : '';
-  
-  // Ajuste para o conteúdo principal baseado na presença do banner
-  // Corrigindo para altura exata do header (16) + banner (60) quando presente
-  const contentPaddingTop = (bannerEnabled && bannerVisible) ? 'pt-[76px]' : 'pt-16';
+
+  // Ajuste para o conteúdo principal baseado na presença do banner/countdown
+  // Countdown: 100px mobile + 64px navbar = 164px mobile, 52px + 64px navbar = 116px desktop
+  const getContentPadding = () => {
+    if (countdownVisible) {
+      return 'pt-[164px] sm:pt-[116px]';
+    }
+    return (bannerEnabled && bannerVisible) ? 'pt-[76px]' : 'pt-16';
+  };
+  const contentPaddingTop = getContentPadding();
   
   // Formatar os materiais para exibição
   const materiaisAulas = classes.map(classItem => {
@@ -210,9 +217,19 @@ const Materiais = () => {
                   ))}
                 </ul>
               ) : (
-                <p className="text-gray-400 text-center py-4">
-                  Nenhum material disponível para esta aula no momento.
-                </p>
+                <div className="text-center py-6">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-netflix-red/10 rounded-full mb-4">
+                    <svg className="w-8 h-8 text-netflix-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <p className="text-white font-medium mb-2">
+                    Os materiais desta aula estao a caminho!
+                  </p>
+                  <p className="text-gray-400 text-sm">
+                    Fique atento, conteudos exclusivos serao liberados em breve.
+                  </p>
+                </div>
               )}
               
               <motion.div 

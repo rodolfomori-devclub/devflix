@@ -20,6 +20,7 @@ const Home = () => {
     bannerEnabled,
     bannerVisible,
     toggleBannerVisibility,
+    countdownVisible,
     isLoading,
     error,
     path,
@@ -33,10 +34,14 @@ const Home = () => {
   // Uses the path from context to ensure consistency in routes
   const basePath = useMemo(() => path ? `/${path}` : '', [path]);
 
-  // Content padding based on banner presence
-  const contentPaddingTop = useMemo(() =>
-    (bannerEnabled && bannerVisible) ? 'pt-[60px]' : 'pt-0',
-    [bannerEnabled, bannerVisible]);
+  // Content padding based on banner/countdown presence
+  // Countdown: 100px mobile + 52px navbar = 152px mobile, 52px + 64px navbar = 116px desktop
+  const contentPaddingTop = useMemo(() => {
+    if (countdownVisible) {
+      return 'pt-[152px] sm:pt-[116px]';
+    }
+    return (bannerEnabled && bannerVisible) ? 'pt-[60px]' : 'pt-0';
+  }, [bannerEnabled, bannerVisible, countdownVisible]);
 
   // Home buttons configuration with memoization
   const homeButtons = useMemo(() => currentDevflix?.homeButtons || {
@@ -44,6 +49,9 @@ const Home = () => {
     secondary: { text: 'Materiais de Apoio', url: '/materiais', enabled: true },
     whatsapp: { enabled: false, text: 'Entre no Grupo VIP do WhatsApp', url: '' }
   }, [currentDevflix]);
+
+  // Class dates configuration
+  const classDates = useMemo(() => currentDevflix?.classDates || null, [currentDevflix]);
 
   // Optimize resource loading
   useEffect(() => {
@@ -115,7 +123,7 @@ const Home = () => {
   return (
     <div className={`min-h-screen ${contentPaddingTop}`}>
       {/* Banner inicial */}
-      <InitialBanner 
+      <InitialBanner
         bannerData={currentDevflix?.initialBanner}
         instancePath={path}
       />
@@ -139,7 +147,7 @@ const Home = () => {
           darken={true}
         >
           {/* Hero Content - reduced height to make room for thumbnails */}
-          <div className="flex justify-end h-[75vh] container-custom flex-col pb-10">
+          <div className="flex justify-end h-[65vh] container-custom flex-col pb-10">
             <div className="max-w-3xl">
               <motion.div
                 initial={{ opacity: 0, y: -20 }}
@@ -205,7 +213,7 @@ const Home = () => {
 
           {/* "Em alta" section now positioned higher with less padding */}
           <div className="relative z-10 -mt-16">
-            <section className="pt-40 pb-8">
+            <section className="pt-24 pb-8">
               <div className="container-custom">
                 <motion.h2
                   className="section-header mb-6"
@@ -227,6 +235,7 @@ const Home = () => {
                       <MemoizedCourseCard
                         course={course}
                         basePath={basePath}
+                        classDates={classDates}
                       />
                     </motion.div>
                   ))}
@@ -311,7 +320,7 @@ const Home = () => {
       )}
 
       {/* About Course component - lazy loaded */}
-      <AboutCourse aboutData={currentDevflix?.aboutCourse} homeButtons={homeButtons} />
+      <AboutCourse aboutData={currentDevflix?.aboutCourse} homeButtons={homeButtons} basePath={basePath} />
     </div>
   );
 };

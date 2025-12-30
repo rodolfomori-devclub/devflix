@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
+import RodolfoMoriImg from '../assets/rodolfo-mori.jpg';
 
-const AboutCourse = ({ aboutData, homeButtons }) => {
+const AboutCourse = ({ aboutData, homeButtons, basePath = '' }) => {
   // Default data if no aboutData is provided
   const defaultData = {
     courseTitle: 'Sobre o curso',
@@ -12,7 +13,7 @@ Com uma metodologia direta ao ponto, suporte 7 dias por semana, mentorias ao viv
     whatsappCardDescription: 'Clique abaixo e entre no meu grupo exclusivo no Whatsapp para ter acesso aos avisos, atualizações e à condições exclusivas',
     materialsCardTitle: 'Materiais Exclusivos',
     materialsCardDescription: 'Apostilas, códigos e ferramentas práticas pra te ajudar a sair do zero, acelerar seu aprendizado e dar os primeiros passos.',
-    instructorImage: '/assets/instrutor.png',
+    instructorImage: RodolfoMoriImg,
     instructorName: 'Rodolfo Mori',
     instructorTitle: 'Programador Sênior',
     instructorBio: 'Rodolfo Mori, fundador do DevClub, já levou mais de 15 mil alunos do zero à programação. De eletricista a Dev Sênior em empresas como Santander e BTG, hoje ensina como conquistar os melhores empregos do mercado.'
@@ -111,7 +112,7 @@ Com uma metodologia direta ao ponto, suporte 7 dias por semana, mentorias ao viv
                 
                 {buttons?.secondary?.enabled && (
                   <a
-                    href={formatUrl(buttons.secondary.url)}
+                    href={formatUrl(buttons.secondary.url, basePath)}
                     target={isExternalLink(buttons.secondary.url) ? "_blank" : "_self"}
                     rel={isExternalLink(buttons.secondary.url) ? "noopener noreferrer" : ""}
                     className="btn-primary py-2 px-4 text-sm inline-flex items-center"
@@ -133,12 +134,14 @@ Com uma metodologia direta ao ponto, suporte 7 dias por semana, mentorias ao viv
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
-            <img
-              src={data.instructorImage}
-              alt={data.instructorName}
-              className="w-full object-cover h-64"
-              loading="lazy"
-            />
+            <div className="h-80 overflow-hidden">
+              <img
+                src={data.instructorImage}
+                alt={data.instructorName}
+                className="w-full h-full object-cover object-top scale-[1.8] translate-y-8"
+                loading="lazy"
+              />
+            </div>
             <div className="p-4">
               <h3 className="text-xl font-bold mb-1">{data.instructorName}</h3>
               <p className="text-gray-400 mb-3">{data.instructorTitle}</p>

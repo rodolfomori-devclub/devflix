@@ -11,6 +11,8 @@ import ErrorRouteHandler from './pages/ErrorRouteHandler';
 const Home = lazy(() => import('./pages/Home'));
 const Materiais = lazy(() => import('./pages/Materiais'));
 const Cronograma = lazy(() => import('./pages/Cronograma'));
+const Aquecimento = lazy(() => import('./pages/Aquecimento'));
+import CountdownBanner from './components/CountdownBanner';
 
 // Admin components - lazy loaded
 const AdminLayout = lazy(() => import('./admin/components/AdminLayout'));
@@ -22,6 +24,7 @@ const AdminHeaderButtons = lazy(() => import('./admin/pages/AdminHeaderButtons')
 const AdminSettings = lazy(() => import('./admin/pages/AdminSettings'));
 const AdminInitialBanner = lazy(() => import('./admin/pages/AdminInitialBanner'));
 const AdminSchedule = lazy(() => import('./admin/pages/AdminSchedule'));
+const AdminCronograma = lazy(() => import('./admin/pages/AdminCronograma'));
 const AdminAboutCourse = lazy(() => import('./admin/pages/AdminAboutCourse'));
 const AdminTexts = lazy(() => import('./admin/pages/AdminTexts'));
 const BannerPreview = lazy(() => import('./admin/pages/BannerPreview'));
@@ -175,6 +178,13 @@ function App() {
                       <AdminSchedule />
                     </Suspense>
                   } />
+                  <Route path="cronograma" element={
+                    <Suspense fallback={<div className="h-screen bg-netflix-black flex items-center justify-center">
+                      <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-netflix-red rounded-full"></div>
+                    </div>}>
+                      <AdminCronograma />
+                    </Suspense>
+                  } />
                   <Route path="about-course" element={
                     <Suspense fallback={<div className="h-screen bg-netflix-black flex items-center justify-center">
                       <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-netflix-red rounded-full"></div>
@@ -196,6 +206,7 @@ function App() {
               <Route path="/:path" element={
                 <DevflixProvider>
                   <MaterialsUnlockChecker />
+                  <CountdownBanner />
                   <Navbar />
                   <main className="flex-grow">
                     <Suspense fallback={<div className="h-screen bg-netflix-black flex items-center justify-center">
@@ -212,6 +223,7 @@ function App() {
               <Route path="/:path/materiais" element={
                 <DevflixProvider>
                   <MaterialsUnlockChecker />
+                  <CountdownBanner />
                   <Navbar />
                   <main className="flex-grow">
                     <Suspense fallback={<div className="h-screen bg-netflix-black flex items-center justify-center">
@@ -228,6 +240,7 @@ function App() {
               <Route path="/:path/cronograma" element={
                 <DevflixProvider>
                   <MaterialsUnlockChecker />
+                  <CountdownBanner />
                   <Navbar />
                   <main className="flex-grow">
                     <Suspense fallback={<div className="h-screen bg-netflix-black flex items-center justify-center">
@@ -239,10 +252,28 @@ function App() {
                   <Footer />
                 </DevflixProvider>
               } />
+
+              {/* Aquecimento routes */}
+              <Route path="/:path/aquecimento" element={
+                <DevflixProvider>
+                  <MaterialsUnlockChecker />
+                  <CountdownBanner />
+                  <Navbar />
+                  <main className="flex-grow">
+                    <Suspense fallback={<div className="h-screen bg-netflix-black flex items-center justify-center">
+                      <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-netflix-red rounded-full"></div>
+                    </div>}>
+                      <Aquecimento />
+                    </Suspense>
+                  </main>
+                  <Footer />
+                </DevflixProvider>
+              } />
               
               {/* Class routes */}
               <Route path="/:path/aula/:id" element={
                 <DevflixProvider>
+                  <CountdownBanner />
                   <Navbar />
                   <AulaPage match={{ params: { id: window.location.pathname.split('/').pop() } }} />
                   <Footer />

@@ -3,18 +3,26 @@ import { useEffect, useState } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 import PublishStatusEditor from '../components/PublishStatusEditor';
 
+// Formatar data para exibição
+const formatDateDisplay = (isoDate) => {
+  if (!isoDate) return '';
+  const date = new Date(isoDate);
+  const options = { weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' };
+  return date.toLocaleDateString('pt-BR', options);
+};
+
 const AdminSettings = () => {
   const { isLoading, currentDevflix, updateDevflixInstance } = useAdmin();
   const [baseUrl, setBaseUrl] = useState('');
   const [mainTitle, setMainTitle] = useState('');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
-  
+
   useEffect(() => {
     // Determinar a URL base do site
     const url = window.location.origin;
     setBaseUrl(url);
   }, []);
-  
+
   useEffect(() => {
     // Carregar o título principal atual
     if (currentDevflix) {
@@ -44,7 +52,7 @@ const AdminSettings = () => {
   
   const handleSaveTitle = async () => {
     if (!currentDevflix) return;
-    
+
     try {
       await updateDevflixInstance(currentDevflix.id, { title: mainTitle });
       setIsEditingTitle(false);
@@ -59,6 +67,41 @@ const AdminSettings = () => {
       <h2 className="text-2xl font-bold text-white mb-6">Configurações</h2>
       
       <div className="space-y-8">
+        {/* Cronograma das Aulas (somente visualização) */}
+        {currentDevflix?.classDates && (
+          <div className="bg-netflix-dark p-6 rounded-lg shadow-md">
+            <h3 className="text-xl font-bold text-white mb-4">Cronograma das Aulas</h3>
+            <p className="text-gray-400 text-sm mb-4">
+              Datas definidas na criação desta DevFlix.
+            </p>
+
+            <div className="bg-netflix-black rounded-lg p-4">
+              <div className="grid gap-2">
+                <div className="flex items-center justify-between p-2 bg-gray-800 rounded">
+                  <span className="text-netflix-red font-medium">Aula 1</span>
+                  <span className="text-gray-300 text-sm">{formatDateDisplay(currentDevflix.classDates.aula1)}</span>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-gray-800 rounded">
+                  <span className="text-netflix-red font-medium">Aula 2</span>
+                  <span className="text-gray-300 text-sm">{formatDateDisplay(currentDevflix.classDates.aula2)}</span>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-gray-800 rounded">
+                  <span className="text-netflix-red font-medium">Aula 3</span>
+                  <span className="text-gray-300 text-sm">{formatDateDisplay(currentDevflix.classDates.aula3)}</span>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-yellow-900/30 rounded border border-yellow-600/30">
+                  <span className="text-yellow-500 font-medium">Aula Bônus</span>
+                  <span className="text-gray-300 text-sm">{formatDateDisplay(currentDevflix.classDates.aulaBonus)}</span>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-gray-800 rounded">
+                  <span className="text-netflix-red font-medium">Aula 4</span>
+                  <span className="text-gray-300 text-sm">{formatDateDisplay(currentDevflix.classDates.aula4)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Novo componente: Publicação */}
         <PublishStatusEditor />
         

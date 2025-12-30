@@ -16,6 +16,7 @@ export const DevflixProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [bannerVisible, setBannerVisible] = useState(true);
+  const [countdownVisible, setCountdownVisible] = useState(false);
   const [dataInitialized, setDataInitialized] = useState(false);
   const [headerButtonsConfig, setHeaderButtonsConfig] = useState(null);
   
@@ -113,6 +114,7 @@ export const DevflixProvider = ({ children }) => {
               home: { enabled: true, label: 'Home' },
               materiais: { enabled: true, label: 'Materiais de Apoio' },
               cronograma: { enabled: true, label: 'Cronograma' },
+              aquecimento: { enabled: true, label: 'Aquecimento' },
               nossosAlunos: { enabled: true, label: 'Nossos Alunos', url: 'https://stars.devclub.com.br' },
               aiChat: { enabled: true, label: 'Fale com a IA' }
             });
@@ -176,6 +178,11 @@ export const DevflixProvider = ({ children }) => {
   const toggleBannerVisibility = useCallback((visible) => {
     setBannerVisible(visible);
   }, []);
+
+  // Function to control countdown visibility
+  const setCountdownBannerVisible = useCallback((visible) => {
+    setCountdownVisible(visible);
+  }, []);
   
   // Optimize context value with useMemo
   const value = useMemo(() => ({
@@ -186,6 +193,8 @@ export const DevflixProvider = ({ children }) => {
     bannerEnabled: currentDevflix?.bannerEnabled,
     bannerVisible,
     toggleBannerVisibility,
+    countdownVisible,
+    setCountdownBannerVisible,
     classes: currentDevflix?.classes || [],
     materials: currentDevflix?.materials || [],
     headerButtonsConfig,
@@ -196,6 +205,8 @@ export const DevflixProvider = ({ children }) => {
     error,
     bannerVisible,
     toggleBannerVisibility,
+    countdownVisible,
+    setCountdownBannerVisible,
     headerButtonsConfig,
     path
   ]);

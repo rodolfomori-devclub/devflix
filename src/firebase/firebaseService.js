@@ -149,29 +149,61 @@ export const updateHeaderButtonsConfig = async (instanceId, buttonsConfig) => {
 
 // Get header buttons configuration
 export const getHeaderButtonsConfig = async (instanceId) => {
+  // Configuração padrão com todos os botões
+  const defaultConfig = {
+    home: { enabled: true, label: 'Home' },
+    materiais: { enabled: true, label: 'Materiais de Apoio' },
+    cronograma: { enabled: true, label: 'Cronograma' },
+    aquecimento: { enabled: true, label: 'Aquecimento' },
+    nossosAlunos: { enabled: true, label: 'Nossos Alunos', url: 'https://stars.devclub.com.br' },
+    aiChat: { enabled: true, label: 'Fale com a IA' }
+  };
+
   try {
     const docRef = doc(devflixCollection, instanceId);
     const docSnap = await getDoc(docRef);
-    
+
     if (docSnap.exists()) {
       const data = docSnap.data();
-      return data.headerButtonsConfig || {
-        home: { enabled: true, label: 'Home' },
-        materiais: { enabled: true, label: 'Materiais de Apoio' },
-        cronograma: { enabled: true, label: 'Cronograma' },
-        nossosAlunos: { enabled: true, label: 'Nossos Alunos', url: 'https://stars.devclub.com.br' },
-        aiChat: { enabled: true, label: 'Fale com a IA' }
-      };
+      // Merge com a configuração padrão para garantir que novos botões estejam disponíveis
+      const savedConfig = data.headerButtonsConfig || {};
+      return { ...defaultConfig, ...savedConfig };
     }
-    return {
-      home: { enabled: true, label: 'Home' },
-      materiais: { enabled: true, label: 'Materiais de Apoio' },
-      cronograma: { enabled: true, label: 'Cronograma' },
-      nossosAlunos: { enabled: true, label: 'Nossos Alunos', url: 'https://stars.devclub.com.br' },
-      aiChat: { enabled: true, label: 'Fale com a IA' }
-    };
+    return defaultConfig;
   } catch (error) {
     console.error("Erro ao obter configuração dos botões do header:", error);
+    throw error;
+  }
+};
+
+// Get cronograma descriptions
+export const getCronogramaDescriptions = async (instanceId) => {
+  try {
+    const docRef = doc(devflixCollection, instanceId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return data.cronogramaDescriptions || {};
+    }
+    return {};
+  } catch (error) {
+    console.error("Erro ao obter descrições do cronograma:", error);
+    throw error;
+  }
+};
+
+// Update cronograma descriptions
+export const updateCronogramaDescriptions = async (instanceId, descriptions) => {
+  try {
+    const docRef = doc(devflixCollection, instanceId);
+    await updateDoc(docRef, {
+      cronogramaDescriptions: descriptions,
+      updatedAt: serverTimestamp()
+    });
+    return true;
+  } catch (error) {
+    console.error("Erro ao atualizar descrições do cronograma:", error);
     throw error;
   }
 };

@@ -1,127 +1,20 @@
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useDevflix } from '../contexts/DevflixContext';
-import { getScheduleStartData, getScheduleData } from '../firebase/firebaseService';
-
-// Função para extrair ID do YouTube e gerar URL embed
-const getYouTubeEmbedUrl = (url) => {
-  if (!url) return null;
-  
-  console.log('Processing URL:', url);
-  
-  // Se já é uma URL de embed, retorna como está
-  if (url.includes('youtube.com/embed/')) {
-    console.log('Already embed URL:', url);
-    return url;
-  }
-  
-  // Extrair ID do YouTube de diferentes formatos de URL
-  let videoId = null;
-  
-  // https://www.youtube.com/watch?v=VIDEO_ID
-  if (url.includes('youtube.com/watch?v=')) {
-    videoId = url.split('v=')[1]?.split('&')[0];
-    console.log('Extracted ID from watch URL:', videoId);
-  }
-  // https://youtu.be/VIDEO_ID
-  else if (url.includes('youtu.be/')) {
-    videoId = url.split('youtu.be/')[1]?.split('?')[0];
-    console.log('Extracted ID from short URL:', videoId);
-  }
-  
-  // Se encontrou o ID, cria URL embed
-  if (videoId) {
-    const embedUrl = `https://www.youtube.com/embed/${videoId}`;
-    console.log('Generated embed URL:', embedUrl);
-    return embedUrl;
-  }
-  
-  console.log('Could not process URL, returning original:', url);
-  return url; // Retorna URL original se não conseguir processar
-};
+import { getScheduleData } from '../firebase/firebaseService';
 
 const EventSchedule = () => {
   const { currentDevflix } = useDevflix();
-  const [selectedTab, setSelectedTab] = useState('start'); // 'start' ou 'schedule'
   const [selectedDay, setSelectedDay] = useState(0);
-  const [videoModal, setVideoModal] = useState({ isOpen: false, videoUrl: null, title: '' });
-  const [startMapData, setStartMapData] = useState([]);
   const [scheduleData, setScheduleData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  const openVideoModal = (videoUrl, title) => {
-    setVideoModal({ isOpen: true, videoUrl, title });
-    document.body.style.overflow = 'hidden'; // Previne scroll do body
-  };
-
-  const closeVideoModal = () => {
-    setVideoModal({ isOpen: false, videoUrl: null, title: '' });
-    document.body.style.overflow = 'unset'; // Restaura scroll do body
-  };
-
-  // Cleanup - restaura scroll quando componente é desmontado
-  useEffect(() => {
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, []);
-
-  // Adiciona listener para ESC fechar modal
-  useEffect(() => {
-    const handleEscape = (e) => {
-      if (e.key === 'Escape' && videoModal.isOpen) {
-        closeVideoModal();
-      }
-    };
-
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [videoModal.isOpen]);
 
   // Load data from Firebase
   useEffect(() => {
     const loadData = async () => {
       if (!currentDevflix?.id) return;
-      
+
       try {
-        // Carregar dados do "Comece por AQUI"
-        const startData = await getScheduleStartData(currentDevflix.id);
-        if (startData && startData.length > 0) {
-          setStartMapData(startData);
-        } else {
-          // Fallback to default data if nothing in Firebase
-          setStartMapData([
-            {
-              id: 1,
-              title: "Bem-vindo à Jornada!",
-              description: "Antes de começarmos, é importante entender o que você vai aprender e como nossa metodologia funciona.",
-              videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-              status: "available"
-            },
-            {
-              id: 2,
-              title: "Configurando o Ambiente",
-              description: "Vamos preparar todas as ferramentas necessárias para o desenvolvimento.",
-              videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-              status: "available"
-            },
-            {
-              id: 3,
-              title: "Primeiros Conceitos",
-              description: "Aprenda os fundamentos básicos que você precisa dominar.",
-              videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-              status: "available"
-            },
-            {
-              id: 4,
-              title: "Projeto Prático",
-              description: "Coloque a mão na massa com seu primeiro projeto real.",
-              videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-              status: "available"
-            }
-          ]);
-        }
-        
         // Carregar dados do Cronograma Completo
         const schedData = await getScheduleData(currentDevflix.id);
         if (schedData && schedData.length > 0) {
@@ -151,8 +44,6 @@ const EventSchedule = () => {
         }
       } catch (error) {
         console.error('Erro ao carregar dados do cronograma:', error);
-        // Fallback data on error
-        setStartMapData([]);
         setScheduleData([]);
       } finally {
         setIsLoading(false);
@@ -161,9 +52,6 @@ const EventSchedule = () => {
 
     loadData();
   }, [currentDevflix]);
-
-  // Os dados do scheduleData agora vêm do Firebase via state
-  // Removido mock data - agora usa [scheduleData, setScheduleData] do state
 
   const getStatusIcon = (status) => {
     switch(status) {
@@ -228,7 +116,7 @@ const EventSchedule = () => {
             animate={{ opacity: 1, y: 0 }}
             className="text-5xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-netflix-red to-red-400 bg-clip-text text-transparent"
           >
-            {selectedTab === 'start' ? 'Comece por AQUI' : 'Cronograma do Evento'}
+            Cronograma do Evento
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 30 }}
@@ -236,90 +124,12 @@ const EventSchedule = () => {
             transition={{ delay: 0.1 }}
             className="text-xl text-gray-300 max-w-2xl mx-auto"
           >
-            {selectedTab === 'start' 
-              ? 'Siga este roteiro para começar sua jornada da melhor forma'
-              : '4 dias intensivos de aprendizado prático em desenvolvimento web'
-            }
+            4 dias intensivos de aprendizado prático em desenvolvimento web
           </motion.p>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex justify-center mb-12">
-          <div className="bg-netflix-dark rounded-2xl p-2 flex gap-2">
-            <button
-              onClick={() => setSelectedTab('start')}
-              className={`px-8 py-3 rounded-xl transition-all duration-300 font-semibold ${
-                selectedTab === 'start'
-                  ? 'bg-gradient-to-r from-netflix-red to-red-600 text-white shadow-lg'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-700'
-              }`}
-            >
-              Comece por AQUI
-            </button>
-            <button
-              onClick={() => setSelectedTab('schedule')}
-              className={`px-8 py-3 rounded-xl transition-all duration-300 font-semibold ${
-                selectedTab === 'schedule'
-                  ? 'bg-gradient-to-r from-netflix-red to-red-600 text-white shadow-lg'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-700'
-              }`}
-            >
-              Cronograma Completo
-            </button>
-          </div>
-        </div>
-
-        {/* Render based on selected tab */}
-        {selectedTab === 'start' ? (
-          // Trilha Minimalista
-          <div className="max-w-3xl mx-auto">
-            <div className="relative">
-              {/* Linha da trilha */}
-              <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-600"></div>
-              
-              {startMapData.map((item, index) => (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, x: -30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.2, duration: 0.5 }}
-                  className="relative flex items-start pb-8 last:pb-0"
-                >
-                  {/* Número do passo */}
-                  <div className="flex-shrink-0 w-12 h-12 bg-netflix-red rounded-full flex items-center justify-center text-white font-bold relative z-10">
-                    {index + 1}
-                  </div>
-                  
-                  {/* Conteúdo */}
-                  <div className="ml-6 flex-1">
-                    <h3 className="text-xl font-semibold text-white mb-2">
-                      {item.title}
-                    </h3>
-                    
-                    <p className="text-gray-400 mb-4">
-                      {item.description}
-                    </p>
-
-                    {/* Botão do vídeo com destaque e pulsação suave */}
-                    {item.videoUrl && (
-                      <button
-                        onClick={() => openVideoModal(item.videoUrl, item.title)}
-                        className="inline-flex items-center gap-3 bg-netflix-red hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-netflix-red/50 animate-soft-pulse"
-                      >
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                        </svg>
-                        Assistir Agora
-                      </button>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          // Schedule Content
-          <>
+        {/* Schedule Content */}
+        <>
             {/* Day Selector */}
             <div className="flex justify-center mb-12">
               <div className="bg-netflix-dark rounded-2xl p-2 flex gap-2 overflow-x-auto">
@@ -466,51 +276,7 @@ const EventSchedule = () => {
               </button>
             </motion.div>
           </>
-        )}
       </div>
-
-      {/* Video Modal */}
-      {videoModal.isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Overlay */}
-          <div 
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            onClick={closeVideoModal}
-          ></div>
-          
-          {/* Modal Content */}
-          <div className="relative z-10 w-full max-w-4xl mx-4">
-            {/* Close Button */}
-            <button
-              onClick={closeVideoModal}
-              className="absolute -top-12 right-0 text-white hover:text-netflix-red transition-colors z-10"
-              aria-label="Fechar vídeo"
-            >
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-
-            {/* Video Container */}
-            <div className="aspect-video bg-black rounded-lg overflow-hidden shadow-2xl">
-              <iframe
-                src={getYouTubeEmbedUrl(videoModal.videoUrl)}
-                width="100%"
-                height="100%"
-                frameBorder="0"
-                allowFullScreen
-                title={videoModal.title}
-                allow="autoplay"
-              ></iframe>
-            </div>
-
-            {/* Video Title */}
-            <h3 className="text-white text-xl font-bold mt-4 text-center">
-              {videoModal.title}
-            </h3>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

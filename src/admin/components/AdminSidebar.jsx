@@ -70,9 +70,20 @@ const AdminSidebar = () => {
         </svg>
       )
     },
-    { 
-      path: '/admin/dev/schedule', 
+    {
+      path: '/admin/dev/schedule',
+      label: 'Aquecimento',
+      description: 'Página "Comece por AQUI"',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+        </svg>
+      )
+    },
+    {
+      path: '/admin/dev/cronograma',
       label: 'Cronograma',
+      description: 'Trilha de Aprendizado',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
@@ -162,7 +173,7 @@ const AdminSidebar = () => {
             </li>
           )}
           <li>
-            <a 
+            <a
               href={`/${currentDevflix?.path}/materiais`}
               target="_blank"
               rel="noopener noreferrer"
@@ -172,6 +183,32 @@ const AdminSidebar = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
               </svg>
               Materiais
+            </a>
+          </li>
+          <li>
+            <a
+              href={`/${currentDevflix?.path}/aquecimento`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-300 hover:text-netflix-red transition-colors flex items-center text-sm"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"></path>
+              </svg>
+              Aquecimento
+            </a>
+          </li>
+          <li>
+            <a
+              href={`/${currentDevflix?.path}/cronograma`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-300 hover:text-netflix-red transition-colors flex items-center text-sm"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              </svg>
+              Cronograma
             </a>
           </li>
         </ul>

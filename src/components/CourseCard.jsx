@@ -1,101 +1,220 @@
-// src/components/CourseCard.jsx (updated)
+// src/components/CourseCard.jsx - Premium 2025 Design
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const CourseCard = ({ course, basePath = '' }) => {
+// Formatar data para exibição curta
+const formatClassDate = (isoDate) => {
+  if (!isoDate) return null;
+  const date = new Date(isoDate);
+  const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  return {
+    weekday: weekdays[date.getDay()],
+    date: `${day}/${month}`,
+    time: `${hours}:${minutes}`
+  };
+};
+
+// Mapear ID da aula para a chave de data correspondente
+const getClassDateKey = (classId) => {
+  const mapping = {
+    1: 'aula1',
+    2: 'aula2',
+    3: 'aula3',
+    4: 'aula4',
+    5: 'aulaBonus' // Aula bônus como aula 5
+  };
+  return mapping[classId];
+};
+
+const CourseCard = ({ course, basePath = '', classDates = null }) => {
   const [isHovered, setIsHovered] = useState(false);
-  
-  // Function to get image with proper React syntax
+
   const getCourseImage = () => {
-    // Check if there's a dynamic coverImage in the course object
     if (course.coverImage) {
-      // Return the image with proper path handling
-      return course.coverImage.startsWith('http') 
-        ? course.coverImage  // Use as-is if it's a full URL
-        : course.coverImage; // Assume it's a correct path
+      return course.coverImage.startsWith('http')
+        ? course.coverImage
+        : course.coverImage;
     }
-    
-    // Fallback image if none specified
     return `/images/aula${course.id}.jpg`;
   };
-  
-  // Function to determine if a link is external
-  const isExternalLink = (url) => {
-    return url && (url.startsWith('http://') || url.startsWith('https://'));
+
+  // Obter a data da aula baseado no ID
+  const getClassDate = () => {
+    if (!classDates) return null;
+    const dateKey = getClassDateKey(course.id);
+    if (!dateKey || !classDates[dateKey]) return null;
+    return formatClassDate(classDates[dateKey]);
   };
-  
+
+  const classDate = getClassDate();
+
   return (
-    <motion.div 
-      className="course-card group"
+    <motion.div
+      className="course-card group relative"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative">
+      {/* Glow effect on hover */}
+      <AnimatePresence>
+        {isHovered && (
+          <motion.div
+            className="absolute -inset-1 rounded-2xl -z-10"
+            style={{
+              background: 'linear-gradient(135deg, rgba(229, 9, 20, 0.4) 0%, rgba(249, 115, 22, 0.3) 100%)',
+              filter: 'blur(15px)',
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          />
+        )}
+      </AnimatePresence>
+
+      <div className="relative overflow-hidden rounded-2xl">
         {/* Thumbnail Image */}
-        <img 
-          src={getCourseImage()} 
+        <motion.img
+          src={getCourseImage()}
           alt={`Capa da ${course.title}`}
-          className="course-card-image transition-transform duration-500 group-hover:scale-110 group-hover:brightness-50"
+          className="course-card-image w-full aspect-video object-cover"
+          animate={{
+            scale: isHovered ? 1.08 : 1,
+            filter: isHovered ? 'brightness(0.4)' : 'brightness(1)',
+          }}
+          transition={{ duration: 0.4 }}
         />
-        
-        {/* Class Number Badge */}
-        <div className="absolute bottom-3 left-3 text-lg font-bold text-white drop-shadow-lg">
-          {`Aula ${course.id}`}
-        </div>
-        
-        {/* Overlay Content (only visible on hover) */}
-        <div className="course-card-overlay">
-          <h3 className="course-card-title">{course.title}</h3>
-          {course.description && (
-            <p className="text-sm text-gray-300 mb-4">{course.description}</p>
-          )}
-          
-          <div className="flex">
-            {/* Single button that opens in a new tab */}
-            <a 
-              href={course.videoLink || `${basePath}/aula/${course.id}`} 
-              target="_blank"
-              rel="noopener noreferrer"
-              className="course-card-button flex-1 text-center"
-            >
-              <div className="flex items-center justify-center">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                Assistir
-              </div>
-            </a>
+
+        {/* Premium badge with date */}
+        <div className="absolute top-3 left-3 flex items-center gap-2">
+          <div
+            className="px-3 py-1.5 rounded-lg font-display font-semibold text-xs text-white backdrop-blur-sm"
+            style={{
+              background: 'linear-gradient(135deg, rgba(229, 9, 20, 0.9) 0%, rgba(249, 115, 22, 0.9) 100%)',
+              boxShadow: '0 4px 15px rgba(229, 9, 20, 0.3)',
+            }}
+          >
+            AULA {course.id}
           </div>
+          {classDate && (
+            <div
+              className="px-2 py-1.5 rounded-lg font-display text-xs text-white backdrop-blur-sm flex items-center gap-1"
+              style={{
+                background: 'rgba(0, 0, 0, 0.7)',
+              }}
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span>{classDate.weekday} {classDate.date} às {classDate.time}</span>
+            </div>
+          )}
         </div>
+
+        {/* Play button indicator */}
+        <motion.div
+          className="absolute inset-0 flex items-center justify-center pointer-events-none"
+          animate={{
+            opacity: isHovered ? 1 : 0,
+            scale: isHovered ? 1 : 0.8,
+          }}
+          transition={{ duration: 0.3 }}
+        >
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center backdrop-blur-sm"
+            style={{
+              background: 'rgba(229, 9, 20, 0.9)',
+              boxShadow: '0 0 30px rgba(229, 9, 20, 0.5)',
+            }}
+          >
+            <svg className="w-7 h-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </div>
+        </motion.div>
+
+        {/* Overlay Content */}
+        <motion.div
+          className="absolute inset-0 flex flex-col justify-end p-5"
+          style={{
+            background: 'linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.5) 50%, transparent 100%)',
+          }}
+          animate={{
+            opacity: isHovered ? 1 : 0,
+          }}
+          transition={{ duration: 0.3 }}
+        >
+          <motion.h3
+            className="font-display font-bold text-lg mb-2 text-white"
+            animate={{ y: isHovered ? 0 : 10 }}
+            transition={{ duration: 0.3 }}
+          >
+            {course.title}
+          </motion.h3>
+
+          {course.description && (
+            <motion.p
+              className="text-sm text-gray-300 mb-4 line-clamp-2"
+              animate={{ y: isHovered ? 0 : 10, opacity: isHovered ? 1 : 0 }}
+              transition={{ duration: 0.3, delay: 0.05 }}
+            >
+              {course.description}
+            </motion.p>
+          )}
+
+          <motion.a
+            href={course.videoLink || `${basePath}/aula/${course.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="relative overflow-hidden py-2.5 px-5 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2 group/btn"
+            style={{
+              background: 'linear-gradient(135deg, #E50914 0%, #ff4d4d 50%, #f97316 100%)',
+              backgroundSize: '200% 200%',
+              boxShadow: '0 4px 15px rgba(229, 9, 20, 0.4)',
+            }}
+            animate={{ y: isHovered ? 0 : 10, opacity: isHovered ? 1 : 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+            whileHover={{
+              backgroundPosition: '100% 50%',
+              boxShadow: '0 6px 20px rgba(229, 9, 20, 0.5)',
+            }}
+          >
+            <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700" />
+            <svg className="w-4 h-4 relative z-10" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+            <span className="relative z-10">Assistir Agora</span>
+          </motion.a>
+        </motion.div>
       </div>
-      
-      {/* Info visible outside of hover for mobile UX */}
-      <div className="p-3 bg-netflix-dark md:hidden">
-        <h3 className="text-sm font-bold truncate mb-2">{course.title}</h3>
-        <a 
+
+      {/* Mobile info - always visible */}
+      <div
+        className="p-4 md:hidden"
+        style={{
+          background: 'linear-gradient(180deg, rgba(18, 18, 18, 1) 0%, rgba(10, 10, 10, 1) 100%)',
+        }}
+      >
+        <h3 className="font-display font-bold text-sm truncate mb-3 text-white">{course.title}</h3>
+        <a
           href={course.videoLink || `${basePath}/aula/${course.id}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="course-card-button block w-full text-center text-sm py-1"
+          className="block w-full text-center py-2.5 rounded-xl font-semibold text-sm text-white"
+          style={{
+            background: 'linear-gradient(135deg, #E50914 0%, #ff4d4d 50%, #f97316 100%)',
+            boxShadow: '0 4px 15px rgba(229, 9, 20, 0.3)',
+          }}
         >
           Assistir Agora
         </a>
       </div>
-      
-      {/* Motion Animation for Scale Effect */}
-      {isHovered && (
-        <motion.div
-          className="absolute -inset-3 bg-netflix-dark/50 rounded-lg -z-10"
-          initial={{ opacity: 0, scale: 0.85 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.85 }}
-          transition={{ duration: 0.2 }}
-        />
-      )}
     </motion.div>
   );
 };

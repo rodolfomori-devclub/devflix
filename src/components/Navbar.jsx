@@ -12,19 +12,19 @@ const Navbar = () => {
   const location = useLocation();
   
   // Obtém informações do contexto DevFlix
-  const { bannerEnabled, bannerVisible, currentDevflix, headerButtonsConfig } = useDevflix();
-  
+  const { bannerEnabled, bannerVisible, countdownVisible, currentDevflix, headerButtonsConfig } = useDevflix();
+
   // Obter links do header dinamicamente
   const headerLinks = currentDevflix?.headerLinks || [];
-  
+
   // Filtrar apenas links visíveis que não sejam os fixos
-  const visibleCustomLinks = headerLinks.filter(link => 
-    link.visible && 
-    link.id !== 'link-home' && 
+  const visibleCustomLinks = headerLinks.filter(link =>
+    link.visible &&
+    link.id !== 'link-home' &&
     link.id !== 'link-materials' &&
     link.id !== 'link-ai'
   ).sort((a, b) => a.order - b.order);
-  
+
   useEffect(() => {
     const handleScroll = () => {
       const isScrolled = window.scrollY > 50;
@@ -34,27 +34,37 @@ const Navbar = () => {
     };
 
     window.addEventListener('scroll', handleScroll);
-    
+
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
   }, [scrolled]);
-  
+
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
   };
-  
+
   // Função para abrir/fechar o modal da IA
   const toggleAiModal = () => {
     setAiModalOpen(!aiModalOpen);
   };
-  
+
   // Extrair o path da URL para manter consistência nas rotas
   const pathSegments = location.pathname.split('/').filter(Boolean);
   const basePath = pathSegments.length > 0 ? `/${pathSegments[0]}` : '';
-  
-  // Ajustar posição do navbar baseado na presença do banner
-  const navbarPosition = (bannerEnabled && bannerVisible) ? 'top-[60px]' : 'top-0';
+
+  // Ajustar posição do navbar baseado na presença dos banners
+  // Countdown banner: ~52px desktop, ~100px mobile (flex-col com 2 linhas)
+  const getNavbarPosition = () => {
+    if (countdownVisible) {
+      return 'top-[100px] sm:top-[52px]';
+    }
+    if (bannerEnabled && bannerVisible) {
+      return 'top-[60px]';
+    }
+    return 'top-0';
+  };
+  const navbarPosition = getNavbarPosition();
   
   // Função para renderizar links personalizados
   const renderCustomLinks = (isMobile = false) => {
@@ -109,6 +119,7 @@ const Navbar = () => {
   const isHomeLinkActive = location.pathname === basePath;
   const isMaterialsLinkActive = location.pathname.includes('/materiais');
   const isCronogramaLinkActive = location.pathname.includes('/cronograma');
+  const isAquecimentoLinkActive = location.pathname.includes('/aquecimento');
   
   return (
     <>
@@ -121,9 +132,22 @@ const Navbar = () => {
         transition={{ duration: 0.5 }}
       >
         <div className="container-custom h-16 flex justify-between items-center">
-          {/* Logo */}
-          <Link to={basePath} className="flex items-center">
-            <span className="text-netflix-red font-bold text-3xl">DEV<span className="text-white">FLIX</span></span>
+          {/* Logo with gradient */}
+          <Link to={basePath} className="flex items-center group">
+            <span
+              className="font-display font-bold text-3xl tracking-tight transition-all duration-300"
+              style={{
+                background: 'linear-gradient(135deg, #E50914 0%, #ff4d4d 50%, #f97316 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              DEV
+            </span>
+            <span className="font-display font-bold text-3xl tracking-tight text-white group-hover:text-gray-200 transition-colors">
+              FLIX
+            </span>
           </Link>
           
           {/* Desktop Menu */}
@@ -154,8 +178,8 @@ const Navbar = () => {
             
             {/* Cronograma Link */}
             {headerButtonsConfig?.cronograma?.enabled && (
-              <Link 
-                to={`${basePath}/cronograma`} 
+              <Link
+                to={`${basePath}/cronograma`}
                 className={`hover:text-netflix-red transition-colors ${
                   isCronogramaLinkActive ? 'text-netflix-red font-medium' : 'text-white'
                 }`}
@@ -163,35 +187,59 @@ const Navbar = () => {
                 {headerButtonsConfig.cronograma.label}
               </Link>
             )}
-            
+
+            {/* Aquecimento Link */}
+            {headerButtonsConfig?.aquecimento?.enabled && (
+              <Link
+                to={`${basePath}/aquecimento`}
+                className={`hover:text-netflix-red transition-colors ${
+                  isAquecimentoLinkActive ? 'text-netflix-red font-medium' : 'text-white'
+                }`}
+              >
+                {headerButtonsConfig.aquecimento.label}
+              </Link>
+            )}
+
             {/* Links personalizados */}
             {renderCustomLinks()}
             
-            {/* Botão "Nossos Alunos" */}
+            {/* Botão "Nossos Alunos" - Premium Style */}
             {headerButtonsConfig?.nossosAlunos?.enabled && (
               <a
                 href={headerButtonsConfig.nossosAlunos.url || "https://stars.devclub.com.br"}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-white hover:bg-gray-200 text-netflix-red py-1.5 px-4 rounded-md transition-all duration-200 flex items-center space-x-1"
+                className="relative py-2 px-5 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center gap-2 overflow-hidden group"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.95)',
+                  color: '#E50914',
+                  boxShadow: '0 4px 15px rgba(255, 255, 255, 0.2)',
+                }}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                <svg className="w-4 h-4 relative z-10" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
                 </svg>
-                <span>{headerButtonsConfig.nossosAlunos.label}</span>
+                <span className="relative z-10">{headerButtonsConfig.nossosAlunos.label}</span>
               </a>
             )}
-            
-            {/* Botão de chat com IA */}
+
+            {/* Botão de chat com IA - Premium Gradient */}
             {headerButtonsConfig?.aiChat?.enabled && (
               <button
                 onClick={toggleAiModal}
-                className="bg-netflix-red hover:bg-red-700 text-white py-1.5 px-4 rounded-md transition-all duration-200 flex items-center space-x-1"
+                className="relative py-2 px-5 rounded-xl font-semibold text-sm text-white transition-all duration-300 flex items-center gap-2 overflow-hidden group"
+                style={{
+                  background: 'linear-gradient(135deg, #E50914 0%, #ff4d4d 50%, #f97316 100%)',
+                  backgroundSize: '200% 200%',
+                  boxShadow: '0 4px 15px rgba(229, 9, 20, 0.4)',
+                }}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                <svg className="w-4 h-4 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
                 </svg>
-                <span>{headerButtonsConfig.aiChat.label}</span>
+                <span className="relative z-10">{headerButtonsConfig.aiChat.label}</span>
               </button>
             )}
           </div>
@@ -280,8 +328,8 @@ const Navbar = () => {
                 
                 {/* Cronograma Link para mobile */}
                 {headerButtonsConfig?.cronograma?.enabled && (
-                  <Link 
-                    to={`${basePath}/cronograma`} 
+                  <Link
+                    to={`${basePath}/cronograma`}
                     className={`block py-2 ${
                       isCronogramaLinkActive ? 'text-netflix-red font-medium' : 'text-white'
                     }`}
@@ -290,7 +338,20 @@ const Navbar = () => {
                     {headerButtonsConfig.cronograma.label}
                   </Link>
                 )}
-                
+
+                {/* Aquecimento Link para mobile */}
+                {headerButtonsConfig?.aquecimento?.enabled && (
+                  <Link
+                    to={`${basePath}/aquecimento`}
+                    className={`block py-2 ${
+                      isAquecimentoLinkActive ? 'text-netflix-red font-medium' : 'text-white'
+                    }`}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {headerButtonsConfig.aquecimento.label}
+                  </Link>
+                )}
+
                 {/* Links personalizados para mobile */}
                 {renderCustomLinks(true)}
                 
