@@ -390,23 +390,23 @@ export const addDevflixInstance = async (data) => {
 // Update to the duplicateDevflixInstance function in src/firebase/firebaseService.js
 
 // Duplicar uma instância DevFlix existente
-export const duplicateDevflixInstance = async (id, newPath, newName) => {
+export const duplicateDevflixInstance = async (id, newPath, newName, classDates = {}) => {
   try {
     // Buscar a instância original
     const originalInstance = await getDevflixById(id);
-    
+
     if (!originalInstance) {
       throw new Error("Instância original não encontrada");
     }
-    
+
     // Verificar se o path já existe
     const q = query(devflixCollection, where("path", "==", newPath));
     const snapshot = await getDocs(q);
-    
+
     if (!snapshot.empty) {
       throw new Error(`O caminho '${newPath}' já está em uso.`);
     }
-    
+
     // Criar uma nova instância com base na original
     const duplicatedInstance = {
       name: newName,
@@ -418,8 +418,8 @@ export const duplicateDevflixInstance = async (id, newPath, newName) => {
       banner: {...originalInstance.banner},
       bannerEnabled: originalInstance.bannerEnabled,
       // Copy home buttons configuration
-      homeButtons: originalInstance.homeButtons 
-        ? {...originalInstance.homeButtons} 
+      homeButtons: originalInstance.homeButtons
+        ? {...originalInstance.homeButtons}
         : {
             primary: { text: 'Assistir Agora', url: '' },
             secondary: { text: 'Materiais de Apoio', url: '/materiais' },
@@ -428,8 +428,9 @@ export const duplicateDevflixInstance = async (id, newPath, newName) => {
       // Copy hero and instructor images
       heroImage: originalInstance.heroImage || '/images/bg-hero.jpg',
       instructorImage: originalInstance.instructorImage || '/images/instructor.png',
-      headerLinks: originalInstance.headerLinks 
-        ? [...originalInstance.headerLinks] 
+      backgroundVideo: originalInstance.backgroundVideo || '/videos/background.mp4',
+      headerLinks: originalInstance.headerLinks
+        ? [...originalInstance.headerLinks]
         : [
             {
               id: 'link-home',
@@ -446,9 +447,37 @@ export const duplicateDevflixInstance = async (id, newPath, newName) => {
               order: 1
             }
           ],
+      // Copy header buttons configuration
+      headerButtonsConfig: originalInstance.headerButtonsConfig
+        ? {...originalInstance.headerButtonsConfig}
+        : null,
+      // Copy Aquecimento/Schedule Start data (with deep copy for gifts)
+      scheduleStartData: originalInstance.scheduleStartData
+        ? originalInstance.scheduleStartData.map(item => ({
+            ...item,
+            gifts: item.gifts ? item.gifts.map(gift => ({
+              ...gift,
+              challenge: gift.challenge ? {...gift.challenge} : null
+            })) : []
+          }))
+        : [],
+      // Copy Cronograma descriptions
+      cronogramaDescriptions: originalInstance.cronogramaDescriptions
+        ? {...originalInstance.cronogramaDescriptions}
+        : {},
+      // Copy About Course data
+      aboutCourse: originalInstance.aboutCourse
+        ? {...originalInstance.aboutCourse}
+        : null,
+      // Copy initial banner settings
+      initialBanner: originalInstance.initialBanner
+        ? {...originalInstance.initialBanner}
+        : null,
+      // NEW class dates (not from original, but from user input)
+      classDates: classDates,
       isPublished: false // Por padrão, a instância duplicada não é publicada
     };
-    
+
     const docRef = await addDoc(devflixCollection, duplicatedInstance);
     return docRef.id;
   } catch (error) {

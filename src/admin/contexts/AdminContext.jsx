@@ -104,22 +104,22 @@ export const AdminProvider = ({ children }) => {
   };
 
   // Nova função para duplicar uma instância DevFlix
-  const duplicateDevflixInstance = async (id, newPath, newName) => {
+  const duplicateDevflixInstance = async (id, newPath, newName, classDates = {}) => {
     try {
       setIsLoading(true);
-      
+
       // Duplicar a instância no Firebase
-      const newId = await duplicateDevflixInFirebase(id, newPath, newName);
-      
+      const newId = await duplicateDevflixInFirebase(id, newPath, newName, classDates);
+
       // Buscar a instância completa
       const duplicatedInstance = await getDevflixById(newId);
-      
+
       // Atualizar estado local
       setDevflixInstances(prev => [...prev, duplicatedInstance]);
-      
+
       // Selecionar a nova instância
       setCurrentDevflix(duplicatedInstance);
-      
+
       setIsLoading(false);
       return newId;
     } catch (err) {
