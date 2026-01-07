@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getDevflixByPath, getHeaderButtonsConfig } from '../firebase/firebaseService';
 import eventBus, { MATERIAL_EVENTS } from '../services/eventBus';
 import cacheService from '../services/cacheService';
+import SupportBubble from '../components/SupportBubble';
 
 // Create the context
 const DevflixContext = createContext();
@@ -213,6 +214,7 @@ export const DevflixProvider = ({ children }) => {
   
   return (
     <DevflixContext.Provider value={value}>
+      <SupportBubble />
       {children}
     </DevflixContext.Provider>
   );
