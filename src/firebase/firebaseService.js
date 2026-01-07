@@ -1,21 +1,23 @@
 // src/firebase/firebaseService.js
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  getDoc, 
-  setDoc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
+import {
+  collection,
+  doc,
+  getDocs,
+  getDoc,
+  setDoc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
   where,
-  serverTimestamp 
+  serverTimestamp,
+  onSnapshot
 } from 'firebase/firestore';
 import { db } from './config';
 
 // Referências às coleções
 const devflixCollection = collection(db, 'devflix-instances');
+const pollsCollection = collection(db, 'polls');
 
 // src/firebase/firebaseService.js (Add this function)
 
@@ -659,6 +661,173 @@ export const updateInitialBannerSettings = async (instanceId, bannerData) => {
     return true;
   } catch (error) {
     console.error("Erro ao atualizar banner inicial:", error);
+    throw error;
+  }
+};
+
+// ==================== POLLS / ENQUETES ====================
+
+// Obter todas as enquetes de uma instancia
+export const getPolls = async (instanceId) => {
+  try {
+    const q = query(pollsCollection, where("instanceId", "==", instanceId));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(docSnap => ({
+      id: docSnap.id,
+      ...docSnap.data()
+    }));
+  } catch (error) {
+    console.error("Erro ao obter enquetes:", error);
+    throw error;
+  }
+};
+
+// Obter enquete por ID do step (aquecimento)
+export const getPollByStepId = async (instanceId, stepId) => {
+  try {
+    const q = query(
+      pollsCollection,
+      where("instanceId", "==", instanceId),
+      where("stepId", "==", stepId)
+    );
+    const snapshot = await getDocs(q);
+
+    if (!snapshot.empty) {
+      const docSnap = snapshot.docs[0];
+      return {
+        id: docSnap.id,
+        ...docSnap.data()
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error("Erro ao obter enquete:", error);
+    throw error;
+  }
+};
+
+// Criar nova enquete
+export const createPoll = async (pollData) => {
+  try {
+    const newPoll = {
+      ...pollData,
+      votes: {},
+      voters: {},
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+
+    const docRef = await addDoc(pollsCollection, newPoll);
+    return docRef.id;
+  } catch (error) {
+    console.error("Erro ao criar enquete:", error);
+    throw error;
+  }
+};
+
+// Atualizar enquete
+export const updatePoll = async (pollId, pollData) => {
+  try {
+    const docRef = doc(pollsCollection, pollId);
+    await updateDoc(docRef, {
+      ...pollData,
+      updatedAt: serverTimestamp()
+    });
+    return true;
+  } catch (error) {
+    console.error("Erro ao atualizar enquete:", error);
+    throw error;
+  }
+};
+
+// Deletar enquete
+export const deletePoll = async (pollId) => {
+  try {
+    const docRef = doc(pollsCollection, pollId);
+    await deleteDoc(docRef);
+    return true;
+  } catch (error) {
+    console.error("Erro ao deletar enquete:", error);
+    throw error;
+  }
+};
+
+// Votar em uma enquete
+export const votePoll = async (pollId, optionId, visitorId) => {
+  try {
+    const docRef = doc(pollsCollection, pollId);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      throw new Error("Enquete nao encontrada");
+    }
+
+    const pollData = docSnap.data();
+    const currentVotes = pollData.votes || {};
+    const currentVoters = pollData.voters || {};
+
+    // Verificar se o usuario ja votou
+    const previousVote = currentVoters[visitorId];
+
+    // Se ja votou na mesma opcao, nao faz nada
+    if (previousVote === optionId) {
+      return { success: true, message: "Voce ja votou nesta opcao" };
+    }
+
+    // Se ja votou em outra opcao, remove o voto anterior
+    if (previousVote) {
+      currentVotes[previousVote] = Math.max(0, (currentVotes[previousVote] || 1) - 1);
+    }
+
+    // Adiciona o novo voto
+    currentVotes[optionId] = (currentVotes[optionId] || 0) + 1;
+    currentVoters[visitorId] = optionId;
+
+    // Atualiza no Firebase
+    await updateDoc(docRef, {
+      votes: currentVotes,
+      voters: currentVoters,
+      updatedAt: serverTimestamp()
+    });
+
+    return { success: true, message: previousVote ? "Voto alterado com sucesso" : "Voto registrado com sucesso" };
+  } catch (error) {
+    console.error("Erro ao votar:", error);
+    throw error;
+  }
+};
+
+// Listener em tempo real para enquete
+export const subscribeToPoll = (pollId, callback) => {
+  const docRef = doc(pollsCollection, pollId);
+
+  return onSnapshot(docRef, (docSnap) => {
+    if (docSnap.exists()) {
+      callback({
+        id: docSnap.id,
+        ...docSnap.data()
+      });
+    } else {
+      callback(null);
+    }
+  }, (error) => {
+    console.error("Erro no listener da enquete:", error);
+  });
+};
+
+// Obter voto do usuario em uma enquete
+export const getUserVote = async (pollId, visitorId) => {
+  try {
+    const docRef = doc(pollsCollection, pollId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const pollData = docSnap.data();
+      return pollData.voters?.[visitorId] || null;
+    }
+    return null;
+  } catch (error) {
+    console.error("Erro ao obter voto do usuario:", error);
     throw error;
   }
 };

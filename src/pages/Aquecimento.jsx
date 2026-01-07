@@ -1,9 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect, useCallback } from 'react';
 import { useDevflix } from '../contexts/DevflixContext';
-import { getScheduleStartData } from '../firebase/firebaseService';
+import { getScheduleStartData, getPolls } from '../firebase/firebaseService';
 import PromoBanner from '../components/PromoBanner';
 import FloatingWhatsAppButton from '../components/FloatingWhatsAppButton';
+import Poll from '../components/Poll';
 
 // Função para extrair ID do YouTube
 const getYouTubeVideoId = (url) => {
@@ -36,11 +37,21 @@ const getYouTubeEmbedUrl = (url) => {
   return url;
 };
 
-// Função para gerar URL da thumbnail
+// Função para gerar URL da thumbnail (maxresdefault = 1280x720, hqdefault = 480x360)
 const getYouTubeThumbnail = (url) => {
   const videoId = getYouTubeVideoId(url);
   if (videoId) {
-    return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+    // Usar maxresdefault para maior qualidade (1280x720)
+    return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+  }
+  return null;
+};
+
+// Fallback para thumbnail de menor qualidade caso maxresdefault não exista
+const getYouTubeThumbnailFallback = (url) => {
+  const videoId = getYouTubeVideoId(url);
+  if (videoId) {
+    return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
   }
   return null;
 };
@@ -89,6 +100,7 @@ const Aquecimento = () => {
   const [startMapData, setStartMapData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [unlockedGifts, setUnlockedGifts] = useState([]);
+  const [polls, setPolls] = useState({});
 
   // Carregar presentes desbloqueados do localStorage
   useEffect(() => {
@@ -212,6 +224,7 @@ const Aquecimento = () => {
       if (!currentDevflix?.id) return;
 
       try {
+        // Carregar dados do aquecimento
         const startData = await getScheduleStartData(currentDevflix.id);
         if (startData && startData.length > 0) {
           setStartMapData(startData);
@@ -248,6 +261,16 @@ const Aquecimento = () => {
             }
           ]);
         }
+
+        // Carregar enquetes
+        const pollsData = await getPolls(currentDevflix.id);
+        const pollsMap = {};
+        pollsData.forEach(poll => {
+          if (poll.stepId) {
+            pollsMap[poll.stepId] = poll;
+          }
+        });
+        setPolls(pollsMap);
       } catch (error) {
         console.error('Erro ao carregar dados do aquecimento:', error);
         setStartMapData([]);
@@ -302,110 +325,176 @@ const Aquecimento = () => {
           </motion.p>
         </div>
 
-        {/* Trilha Minimalista */}
-        <div className="max-w-3xl mx-auto">
-          <div className="relative">
-            {/* Linha da trilha */}
-            <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-600"></div>
-
+        {/* Trilha Premium */}
+        <div className="max-w-4xl mx-auto">
+          <div className="space-y-8">
             {startMapData.map((item, index) => (
               <motion.div
                 key={item.id}
-                initial={{ opacity: 0, x: -30 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.2, duration: 0.5 }}
-                className="relative flex items-start pb-8 last:pb-0"
+                initial={{ opacity: 0, y: 40 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.15, duration: 0.6, ease: "easeOut" }}
+                className="relative"
               >
-                {/* Número do passo */}
-                <div className="flex-shrink-0 w-12 h-12 bg-netflix-red rounded-full flex items-center justify-center text-white font-bold relative z-10">
-                  {index + 1}
-                </div>
+                {/* Card principal */}
+                <div className="relative bg-gradient-to-br from-gray-900/90 via-gray-800/90 to-gray-900/90 rounded-2xl overflow-hidden border border-gray-700/50 hover:border-netflix-red/30 transition-all duration-500 shadow-xl hover:shadow-2xl hover:shadow-netflix-red/10">
+                  {/* Barra de progresso no topo */}
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-netflix-red via-red-500 to-orange-500"></div>
 
-                {/* Conteúdo */}
-                <div className="ml-6 flex-1">
-                  <h3 className="text-xl font-semibold text-white mb-2">
-                    {item.title}
-                  </h3>
+                  {/* Header do card */}
+                  <div className="flex items-center gap-4 p-6 pb-4 border-b border-gray-700/50">
+                    {/* Badge do passo */}
+                    <div className="relative">
+                      <div className="w-14 h-14 bg-gradient-to-br from-netflix-red to-red-700 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-netflix-red/30">
+                        {index + 1}
+                      </div>
+                      {/* Indicador de status */}
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-gray-900 animate-pulse"></div>
+                    </div>
 
-                  <p className="text-gray-400 mb-4">
-                    {item.description}
-                  </p>
-
-                  {/* Thumbnail do vídeo clicável */}
-                  {item.videoUrl && (
-                    <button
-                      onClick={() => openVideoModal(item.videoUrl, item.title)}
-                      className="group relative w-full max-w-xs rounded-lg overflow-hidden shadow-lg hover:shadow-netflix-red/30 transition-all duration-300 hover:scale-[1.02]"
-                    >
-                      {/* Thumbnail */}
-                      <div className="relative aspect-video bg-gray-800">
-                        <img
-                          src={getYouTubeThumbnail(item.videoUrl)}
-                          alt={item.title}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                        {/* Overlay escuro no hover */}
-                        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-300" />
-
-                        {/* Botão de play centralizado */}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-14 h-14 rounded-full bg-netflix-red/90 group-hover:bg-netflix-red group-hover:scale-110 flex items-center justify-center transition-all duration-300 shadow-lg">
-                            <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                    {/* Título e tag */}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-1">
+                        <span className="px-2 py-0.5 bg-netflix-red/20 text-netflix-red text-xs font-semibold rounded-full uppercase tracking-wide">
+                          Passo {index + 1}
+                        </span>
+                        {item.videoUrl && (
+                          <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs font-semibold rounded-full flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M8 5v14l11-7z" />
                             </svg>
+                            Vídeo disponível
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="text-2xl font-bold text-white">
+                        {item.title}
+                      </h3>
+                    </div>
+                  </div>
+
+                  {/* Conteúdo */}
+                  <div className="p-6">
+                    <p className="text-gray-300 text-lg leading-relaxed mb-6">
+                      {item.description}
+                    </p>
+
+                    {/* Thumbnail do vídeo - Design melhorado */}
+                    {item.videoUrl && (
+                      <button
+                        onClick={() => openVideoModal(item.videoUrl, item.title)}
+                        className="group relative w-full rounded-xl overflow-hidden shadow-2xl hover:shadow-netflix-red/20 transition-all duration-500 transform hover:scale-[1.02]"
+                      >
+                        {/* Thumbnail */}
+                        <div className="relative aspect-video bg-gray-800">
+                          <img
+                            src={getYouTubeThumbnail(item.videoUrl)}
+                            alt={item.title}
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                            loading="lazy"
+                            onError={(e) => {
+                              // Fallback para hqdefault se maxresdefault não existir
+                              e.target.onerror = null;
+                              e.target.src = getYouTubeThumbnailFallback(item.videoUrl);
+                            }}
+                          />
+
+                          {/* Gradient overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+                          {/* Overlay animado no hover */}
+                          <div className="absolute inset-0 bg-netflix-red/0 group-hover:bg-netflix-red/10 transition-colors duration-500" />
+
+                          {/* Botão de play centralizado - Maior e mais atraente */}
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="relative">
+                              {/* Círculo pulsante de fundo */}
+                              <div className="absolute inset-0 w-24 h-24 -m-3 bg-netflix-red/30 rounded-full animate-ping"></div>
+                              {/* Botão principal */}
+                              <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-netflix-red to-red-700 group-hover:from-red-600 group-hover:to-red-800 flex items-center justify-center transition-all duration-300 shadow-2xl shadow-netflix-red/50 group-hover:scale-110">
+                                <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M8 5v14l11-7z" />
+                                </svg>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Texto no canto inferior */}
+                          <div className="absolute bottom-0 left-0 right-0 p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 text-white">
+                                <svg className="w-5 h-5 text-netflix-red" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M8 5v14l11-7z" />
+                                </svg>
+                                <span className="font-semibold">Clique para assistir</span>
+                              </div>
+                              <div className="px-3 py-1 bg-netflix-red rounded-full text-white text-sm font-bold group-hover:bg-white group-hover:text-netflix-red transition-colors duration-300">
+                                PLAY
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      </button>
+                    )}
 
-                      {/* Label abaixo da thumbnail */}
-                      <div className="bg-netflix-red group-hover:bg-red-700 text-white py-2 px-4 text-sm font-semibold text-center transition-colors duration-300">
-                        Assistir Agora
-                      </div>
-                    </button>
-                  )}
+                    {/* Presentes / Links Extras */}
+                    {(item.gifts || []).length > 0 && (
+                      <div className="mt-6 p-5 bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl border border-gray-700/50">
+                        <p className="text-white font-semibold mb-4 flex items-center gap-2">
+                          <span className="text-2xl">🎁</span>
+                          Presentes exclusivos deste passo:
+                        </p>
+                        <div className="flex flex-wrap gap-3">
+                          {(item.gifts || []).map(gift => {
+                            const hasChallenge = gift.challenge?.enabled;
+                            const isUnlocked = isGiftUnlocked(gift.id);
+                            const showLock = hasChallenge && !isUnlocked;
 
-                  {/* Presentes / Links Extras */}
-                  {(item.gifts || []).length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-gray-700">
-                      <p className="text-gray-400 text-sm mb-3 flex items-center gap-2">
-                        <span className="text-lg">🎁</span>
-                        Presentes deste passo:
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {(item.gifts || []).map(gift => {
-                          const hasChallenge = gift.challenge?.enabled;
-                          const isUnlocked = isGiftUnlocked(gift.id);
-                          const showLock = hasChallenge && !isUnlocked;
-
-                          return (
-                            <button
-                              key={gift.id}
-                              onClick={(e) => handleGiftClick(e, gift)}
-                              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 hover:scale-105 shadow-md ${
-                                showLock
-                                  ? 'bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500 text-white hover:shadow-yellow-500/30'
-                                  : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white hover:shadow-green-500/30'
-                              }`}
-                            >
-                              {showLock ? (
-                                <span className="text-base">🔒</span>
-                              ) : (
-                                <span className="text-base">{giftIconMap[gift.icon] || '🎁'}</span>
-                              )}
-                              {gift.title}
-                              {!showLock && (
-                                <svg className="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                </svg>
-                              )}
-                            </button>
-                          );
-                        })}
+                            return (
+                              <button
+                                key={gift.id}
+                                onClick={(e) => handleGiftClick(e, gift)}
+                                className={`inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold transition-all duration-300 hover:scale-105 shadow-lg ${
+                                  showLock
+                                    ? 'bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500 text-white hover:shadow-yellow-500/30'
+                                    : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white hover:shadow-green-500/30'
+                                }`}
+                              >
+                                {showLock ? (
+                                  <span className="text-lg">🔒</span>
+                                ) : (
+                                  <span className="text-lg">{giftIconMap[gift.icon] || '🎁'}</span>
+                                )}
+                                {gift.title}
+                                {!showLock && (
+                                  <svg className="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                  </svg>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+
+                    {/* Enquete do passo */}
+                    {polls[item.id] && (
+                      <Poll poll={polls[item.id]} />
+                    )}
+                  </div>
                 </div>
+
+                {/* Conector entre cards (exceto último) */}
+                {index < startMapData.length - 1 && (
+                  <div className="flex justify-center py-4">
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="w-1 h-4 bg-gradient-to-b from-netflix-red to-transparent rounded-full"></div>
+                      <div className="w-2 h-2 bg-netflix-red/50 rounded-full"></div>
+                      <div className="w-1 h-4 bg-gradient-to-b from-transparent to-netflix-red rounded-full"></div>
+                    </div>
+                  </div>
+                )}
               </motion.div>
             ))}
           </div>

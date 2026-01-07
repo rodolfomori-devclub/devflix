@@ -35,10 +35,10 @@ const Home = () => {
   const basePath = useMemo(() => path ? `/${path}` : '', [path]);
 
   // Content padding based on banner/countdown presence
-  // Countdown: 100px mobile + 52px navbar = 152px mobile, 52px + 64px navbar = 116px desktop
+  // Countdown: 115px banner + 64px navbar = 179px mobile, 52px + 64px navbar = 116px desktop
   const contentPaddingTop = useMemo(() => {
     if (countdownVisible) {
-      return 'pt-[152px] sm:pt-[116px]';
+      return 'pt-[179px] sm:pt-[116px]';
     }
     return (bannerEnabled && bannerVisible) ? 'pt-[60px]' : 'pt-0';
   }, [bannerEnabled, bannerVisible, countdownVisible]);
@@ -147,7 +147,7 @@ const Home = () => {
           darken={true}
         >
           {/* Hero Content - reduced height to make room for thumbnails */}
-          <div className="flex justify-end h-[65vh] container-custom flex-col pb-10">
+          <div className="flex justify-start sm:justify-end min-h-[70vh] sm:h-[65vh] container-custom flex-col pb-10 pt-4 sm:pt-20">
             <div className="max-w-3xl">
               <motion.div
                 initial={{ opacity: 0, y: -20 }}
@@ -156,9 +156,9 @@ const Home = () => {
               >
                 <span className="inline-block bg-netflix-red px-2 py-1 text-sm font-bold mb-4">SÉRIE</span>
 
-                <h1 className="text-5xl md:text-7xl font-bold mb-4">{courseTitle}</h1>
+                <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold mb-4">{courseTitle}</h1>
 
-                <p className="text-xl text-gray-300 mb-8">
+                <p className="text-lg sm:text-xl text-gray-300 mb-6 sm:mb-8">
                   {courseSubtitle}
                 </p>
 
@@ -213,7 +213,7 @@ const Home = () => {
 
           {/* "Em alta" section now positioned higher with less padding */}
           <div className="relative z-10 -mt-16">
-            <section className="pt-24 pb-8">
+            <section className="pt-2 sm:pt-16 pb-8">
               <div className="container-custom">
                 <motion.h2
                   className="section-header mb-6"

@@ -27,6 +27,7 @@ const AdminSchedule = lazy(() => import('./admin/pages/AdminSchedule'));
 const AdminCronograma = lazy(() => import('./admin/pages/AdminCronograma'));
 const AdminAboutCourse = lazy(() => import('./admin/pages/AdminAboutCourse'));
 const AdminTexts = lazy(() => import('./admin/pages/AdminTexts'));
+const AdminPolls = lazy(() => import('./admin/pages/AdminPolls'));
 const BannerPreview = lazy(() => import('./admin/pages/BannerPreview'));
 const Login = lazy(() => import('./admin/pages/Login'));
 const ProtectedRoute = lazy(() => import('./admin/components/ProtectedRoute'));
@@ -197,6 +198,13 @@ function App() {
                       <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-netflix-red rounded-full"></div>
                     </div>}>
                       <AdminTexts />
+                    </Suspense>
+                  } />
+                  <Route path="polls" element={
+                    <Suspense fallback={<div className="h-screen bg-netflix-black flex items-center justify-center">
+                      <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-netflix-red rounded-full"></div>
+                    </div>}>
+                      <AdminPolls />
                     </Suspense>
                   } />
                 </Route>

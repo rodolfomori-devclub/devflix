@@ -74,9 +74,9 @@ const CountdownBanner = () => {
             backdropFilter: 'blur(10px)',
           }}
         >
-          <div className="container-custom flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="container-custom flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
             {/* Countdown */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
               <span className="text-white font-semibold text-sm sm:text-base">Aula 1 começa em:</span>
 
               <div className="flex items-center gap-1">

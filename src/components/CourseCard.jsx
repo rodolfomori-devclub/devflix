@@ -94,7 +94,7 @@ const CourseCard = ({ course, basePath = '', classDates = null }) => {
         {/* Premium badge with date */}
         <div className="absolute top-3 left-3 flex items-center gap-2">
           <div
-            className="px-3 py-1.5 rounded-lg font-display font-semibold text-xs text-white backdrop-blur-sm"
+            className="hidden sm:block px-3 py-1.5 rounded-lg font-display font-semibold text-xs text-white backdrop-blur-sm"
             style={{
               background: 'linear-gradient(135deg, rgba(229, 9, 20, 0.9) 0%, rgba(249, 115, 22, 0.9) 100%)',
               boxShadow: '0 4px 15px rgba(229, 9, 20, 0.3)',

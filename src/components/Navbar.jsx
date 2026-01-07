@@ -54,10 +54,10 @@ const Navbar = () => {
   const basePath = pathSegments.length > 0 ? `/${pathSegments[0]}` : '';
 
   // Ajustar posição do navbar baseado na presença dos banners
-  // Countdown banner: ~52px desktop, ~100px mobile (flex-col com 2 linhas)
+  // Countdown banner: ~52px desktop, ~115px mobile (flex-col com 3 linhas: texto + timer + botão)
   const getNavbarPosition = () => {
     if (countdownVisible) {
-      return 'top-[100px] sm:top-[52px]';
+      return 'top-[115px] sm:top-[52px]';
     }
     if (bannerEnabled && bannerVisible) {
       return 'top-[60px]';
