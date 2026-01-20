@@ -37,7 +37,9 @@ import { AdminProvider } from './admin/contexts/AdminContext';
 import { DevflixProvider } from './contexts/DevflixContext';
 import { AuthProvider } from './contexts/AuthContext';
 import SchedulerChecker from './components/SchedulerChecker';
-import MaterialsUnlockChecker from './components/MaterialsUnlockChecker';
+// NOTA: MaterialsUnlockChecker foi removido para corrigir bug de materiais desaparecendo.
+// Agora apenas o SchedulerChecker (global) é responsável pelo desbloqueio de materiais,
+// evitando conflitos entre múltiplos sistemas competindo pelo mesmo recurso.
 
 // Simplified Aula Page Component
 const AulaPage = ({ match }) => {
@@ -213,7 +215,6 @@ function App() {
               {/* DevFlix Routes */}
               <Route path="/:path" element={
                 <DevflixProvider>
-                  <MaterialsUnlockChecker />
                   <CountdownBanner />
                   <Navbar />
                   <main className="flex-grow">
@@ -230,7 +231,6 @@ function App() {
               {/* Materials routes */}
               <Route path="/:path/materiais" element={
                 <DevflixProvider>
-                  <MaterialsUnlockChecker />
                   <CountdownBanner />
                   <Navbar />
                   <main className="flex-grow">
@@ -247,7 +247,6 @@ function App() {
               {/* Schedule routes */}
               <Route path="/:path/cronograma" element={
                 <DevflixProvider>
-                  <MaterialsUnlockChecker />
                   <CountdownBanner />
                   <Navbar />
                   <main className="flex-grow">
@@ -264,7 +263,6 @@ function App() {
               {/* Aquecimento routes */}
               <Route path="/:path/aquecimento" element={
                 <DevflixProvider>
-                  <MaterialsUnlockChecker />
                   <CountdownBanner />
                   <Navbar />
                   <main className="flex-grow">
