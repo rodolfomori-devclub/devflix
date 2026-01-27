@@ -1,7 +1,8 @@
 // src/admin/components/MaterialsEditor.jsx (correção agendamento)
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 import ScheduledUnlockField from './ScheduledUnlockField';
+import { uploadMultipleFiles, formatFileName } from '../../firebase/storageService';
 
 const MaterialsEditor = () => {
   const { currentDevflix, addMaterial, updateMaterial, deleteMaterial, updateMaterials } = useAdmin();
@@ -15,6 +16,11 @@ const MaterialsEditor = () => {
   const [showBulkSchedule, setShowBulkSchedule] = useState(false);
   const [bulkScheduleDate, setBulkScheduleDate] = useState('');
   const [isBulkSubmitting, setIsBulkSubmitting] = useState(false);
+
+  // Estado para upload de múltiplos arquivos
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(null);
+  const fileInputRef = useRef(null);
 
   // Estado para o formulário
   const [formTitle, setFormTitle] = useState('');
@@ -357,6 +363,70 @@ const MaterialsEditor = () => {
     }
   };
 
+  // Função para upload de múltiplos arquivos
+  const handleFileUpload = async (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    if (!selectedClassId) {
+      alert('Selecione uma aula primeiro.');
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress({ completed: 0, total: files.length, current: '', percentage: 0 });
+
+    try {
+      // Caminho no storage: materials/[instanceId]/[classId]/
+      const storagePath = `materials/${currentDevflix.id}/${selectedClassId}/`;
+
+      // Fazer upload de todos os arquivos
+      const results = await uploadMultipleFiles(files, storagePath, (progress) => {
+        setUploadProgress(progress);
+      });
+
+      // Filtrar apenas os uploads bem-sucedidos
+      const successfulUploads = results.filter(r => !r.error);
+      const failedUploads = results.filter(r => r.error);
+
+      // Adicionar cada arquivo como material
+      for (const upload of successfulUploads) {
+        await addMaterial(selectedClassId, {
+          title: formatFileName(upload.name),
+          url: upload.url,
+          type: upload.type,
+          locked: false,
+          scheduledUnlock: null
+        });
+      }
+
+      // Atualizar a lista de materiais
+      if (currentDevflix) {
+        const updatedMaterials = currentDevflix.materials.find(
+          m => m.classId === selectedClassId
+        );
+        setMaterials(updatedMaterials ? updatedMaterials.items : []);
+      }
+
+      // Mostrar resultado
+      if (failedUploads.length > 0) {
+        alert(`${successfulUploads.length} arquivo(s) enviado(s) com sucesso!\n${failedUploads.length} arquivo(s) falharam.`);
+      } else {
+        alert(`${successfulUploads.length} arquivo(s) enviado(s) com sucesso!`);
+      }
+    } catch (error) {
+      console.error('Erro ao fazer upload dos arquivos:', error);
+      alert(`Erro ao fazer upload: ${error.message}`);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(null);
+      // Limpar o input de arquivos
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   // Formatar datetime-local mínimo
   const getMinDatetime = () => {
     const now = new Date();
@@ -380,16 +450,32 @@ const MaterialsEditor = () => {
     <div className="bg-netflix-dark p-6 rounded-lg shadow-md">
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-xl font-bold text-white">Materiais de Apoio</h3>
-        
-        <button
-          onClick={handleAddClick}
-          className="px-3 py-1.5 bg-netflix-red text-white rounded hover:bg-red-700 transition-colors flex items-center"
-        >
-          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-          </svg>
-          Adicionar Material
-        </button>
+
+        <div className="flex gap-2">
+          <button
+            onClick={handleAddClick}
+            className="px-3 py-1.5 bg-netflix-red text-white rounded hover:bg-red-700 transition-colors flex items-center"
+          >
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Adicionar Link
+          </button>
+          <label className="px-3 py-1.5 bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center cursor-pointer">
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+            </svg>
+            Enviar Arquivos
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              onChange={handleFileUpload}
+              className="hidden"
+              accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.md,.zip,.rar,.js,.jsx,.ts,.tsx,.html,.css,.json,.mp4,.mov,.avi,.mkv,.webm"
+            />
+          </label>
+        </div>
       </div>
       
       {/* Seletor de aula */}
@@ -598,6 +684,34 @@ const MaterialsEditor = () => {
         </div>
       )}
       
+      {/* Indicador de progresso do upload */}
+      {isUploading && uploadProgress && (
+        <div className="mb-6 bg-netflix-black p-4 rounded-md border border-green-600">
+          <h4 className="text-white font-medium mb-3 flex items-center">
+            <svg className="w-5 h-5 mr-2 text-green-500 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            Enviando arquivos...
+          </h4>
+
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm text-gray-400">
+              <span>Progresso: {uploadProgress.completed} de {uploadProgress.total}</span>
+              <span>{uploadProgress.percentage}%</span>
+            </div>
+            <div className="w-full bg-gray-700 rounded-full h-2">
+              <div
+                className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${uploadProgress.percentage}%` }}
+              ></div>
+            </div>
+            <p className="text-xs text-gray-500">
+              Enviando: {uploadProgress.current}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Lista de materiais */}
       {materials.length > 0 ? (
         <div className="space-y-3">
