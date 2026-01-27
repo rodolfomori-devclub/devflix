@@ -2,6 +2,7 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
+import { getStorage } from 'firebase/storage';
 
 // Configuração do Firebase
 // Substitua pelos seus dados do Firebase
@@ -20,5 +21,6 @@ const app = initializeApp(firebaseConfig);
 // Inicializar serviços do Firebase
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+export const storage = getStorage(app);
 
 export default app;

@@ -1,7 +1,8 @@
 // src/admin/components/MaterialsEditor.jsx (correção agendamento)
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 import ScheduledUnlockField from './ScheduledUnlockField';
+import { uploadMultipleFiles, formatFileName } from '../../firebase/storageService';
 
 const MaterialsEditor = () => {
   const { currentDevflix, addMaterial, updateMaterial, deleteMaterial, updateMaterials } = useAdmin();
@@ -10,7 +11,17 @@ const MaterialsEditor = () => {
   const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
+  // Estado para programação em lote
+  const [showBulkSchedule, setShowBulkSchedule] = useState(false);
+  const [bulkScheduleDate, setBulkScheduleDate] = useState('');
+  const [isBulkSubmitting, setIsBulkSubmitting] = useState(false);
+
+  // Estado para upload de múltiplos arquivos
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(null);
+  const fileInputRef = useRef(null);
+
   // Estado para o formulário
   const [formTitle, setFormTitle] = useState('');
   const [formUrl, setFormUrl] = useState('');
@@ -237,12 +248,194 @@ const MaterialsEditor = () => {
   // Verificar se uma data de agendamento está próxima (menos de 5 minutos)
   const isScheduleSoon = (dateString) => {
     if (!dateString) return false;
-    
+
     const scheduledTime = new Date(dateString).getTime();
     const now = new Date().getTime();
     const fiveMinutes = 5 * 60 * 1000; // 5 minutos em milissegundos
-    
+
     return scheduledTime - now <= fiveMinutes && scheduledTime > now;
+  };
+
+  // Função para programar todos os materiais da aula selecionada
+  const handleBulkSchedule = async (e) => {
+    e.preventDefault();
+
+    if (!bulkScheduleDate || materials.length === 0) {
+      alert('Selecione uma data e certifique-se de que há materiais na aula.');
+      return;
+    }
+
+    setIsBulkSubmitting(true);
+
+    try {
+      const scheduledTime = new Date(bulkScheduleDate);
+      const now = new Date();
+
+      // Se a data já passou, não permitir
+      if (scheduledTime <= now) {
+        alert('A data de liberação deve ser no futuro.');
+        setIsBulkSubmitting(false);
+        return;
+      }
+
+      // Atualizar todos os materiais da aula
+      const updatedItems = materials.map(item => ({
+        ...item,
+        locked: true,
+        scheduledUnlock: scheduledTime.toISOString()
+      }));
+
+      await updateMaterials(selectedClassId, updatedItems);
+      setMaterials(updatedItems);
+
+      alert(`${materials.length} materiais programados para ${scheduledTime.toLocaleString('pt-BR')}!`);
+      setShowBulkSchedule(false);
+      setBulkScheduleDate('');
+    } catch (error) {
+      console.error('Erro ao programar materiais em lote:', error);
+      alert(`Erro ao programar materiais: ${error.message}`);
+    } finally {
+      setIsBulkSubmitting(false);
+    }
+  };
+
+  // Função para liberar todos os materiais da aula imediatamente
+  const handleBulkUnlock = async () => {
+    if (materials.length === 0) {
+      alert('Não há materiais para liberar.');
+      return;
+    }
+
+    if (!window.confirm(`Deseja liberar todos os ${materials.length} materiais da aula imediatamente?`)) {
+      return;
+    }
+
+    setIsBulkSubmitting(true);
+
+    try {
+      const updatedItems = materials.map(item => ({
+        ...item,
+        locked: false,
+        scheduledUnlock: null
+      }));
+
+      await updateMaterials(selectedClassId, updatedItems);
+      setMaterials(updatedItems);
+
+      alert(`${materials.length} materiais liberados com sucesso!`);
+    } catch (error) {
+      console.error('Erro ao liberar materiais em lote:', error);
+      alert(`Erro ao liberar materiais: ${error.message}`);
+    } finally {
+      setIsBulkSubmitting(false);
+    }
+  };
+
+  // Função para trancar todos os materiais da aula
+  const handleBulkLock = async () => {
+    if (materials.length === 0) {
+      alert('Não há materiais para trancar.');
+      return;
+    }
+
+    if (!window.confirm(`Deseja trancar todos os ${materials.length} materiais da aula?`)) {
+      return;
+    }
+
+    setIsBulkSubmitting(true);
+
+    try {
+      const updatedItems = materials.map(item => ({
+        ...item,
+        locked: true,
+        scheduledUnlock: null
+      }));
+
+      await updateMaterials(selectedClassId, updatedItems);
+      setMaterials(updatedItems);
+
+      alert(`${materials.length} materiais trancados com sucesso!`);
+    } catch (error) {
+      console.error('Erro ao trancar materiais em lote:', error);
+      alert(`Erro ao trancar materiais: ${error.message}`);
+    } finally {
+      setIsBulkSubmitting(false);
+    }
+  };
+
+  // Função para upload de múltiplos arquivos
+  const handleFileUpload = async (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    if (!selectedClassId) {
+      alert('Selecione uma aula primeiro.');
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress({ completed: 0, total: files.length, current: '', percentage: 0 });
+
+    try {
+      // Caminho no storage: materials/[instanceId]/[classId]/
+      const storagePath = `materials/${currentDevflix.id}/${selectedClassId}/`;
+
+      // Fazer upload de todos os arquivos
+      const results = await uploadMultipleFiles(files, storagePath, (progress) => {
+        setUploadProgress(progress);
+      });
+
+      // Filtrar apenas os uploads bem-sucedidos
+      const successfulUploads = results.filter(r => !r.error);
+      const failedUploads = results.filter(r => r.error);
+
+      // Adicionar cada arquivo como material
+      for (const upload of successfulUploads) {
+        await addMaterial(selectedClassId, {
+          title: formatFileName(upload.name),
+          url: upload.url,
+          type: upload.type,
+          locked: false,
+          scheduledUnlock: null
+        });
+      }
+
+      // Atualizar a lista de materiais
+      if (currentDevflix) {
+        const updatedMaterials = currentDevflix.materials.find(
+          m => m.classId === selectedClassId
+        );
+        setMaterials(updatedMaterials ? updatedMaterials.items : []);
+      }
+
+      // Mostrar resultado
+      if (failedUploads.length > 0) {
+        alert(`${successfulUploads.length} arquivo(s) enviado(s) com sucesso!\n${failedUploads.length} arquivo(s) falharam.`);
+      } else {
+        alert(`${successfulUploads.length} arquivo(s) enviado(s) com sucesso!`);
+      }
+    } catch (error) {
+      console.error('Erro ao fazer upload dos arquivos:', error);
+      alert(`Erro ao fazer upload: ${error.message}`);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(null);
+      // Limpar o input de arquivos
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // Formatar datetime-local mínimo
+  const getMinDatetime = () => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 1);
+    return `${now.getFullYear()}-${
+      String(now.getMonth() + 1).padStart(2, '0')}-${
+      String(now.getDate()).padStart(2, '0')}T${
+      String(now.getHours()).padStart(2, '0')}:${
+      String(now.getMinutes()).padStart(2, '0')}`;
   };
   
   if (!currentDevflix) {
@@ -257,16 +450,32 @@ const MaterialsEditor = () => {
     <div className="bg-netflix-dark p-6 rounded-lg shadow-md">
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-xl font-bold text-white">Materiais de Apoio</h3>
-        
-        <button
-          onClick={handleAddClick}
-          className="px-3 py-1.5 bg-netflix-red text-white rounded hover:bg-red-700 transition-colors flex items-center"
-        >
-          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-          </svg>
-          Adicionar Material
-        </button>
+
+        <div className="flex gap-2">
+          <button
+            onClick={handleAddClick}
+            className="px-3 py-1.5 bg-netflix-red text-white rounded hover:bg-red-700 transition-colors flex items-center"
+          >
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Adicionar Link
+          </button>
+          <label className="px-3 py-1.5 bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center cursor-pointer">
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+            </svg>
+            Enviar Arquivos
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              onChange={handleFileUpload}
+              className="hidden"
+              accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.md,.zip,.rar,.js,.jsx,.ts,.tsx,.html,.css,.json,.mp4,.mov,.avi,.mkv,.webm"
+            />
+          </label>
+        </div>
       </div>
       
       {/* Seletor de aula */}
@@ -284,6 +493,92 @@ const MaterialsEditor = () => {
           ))}
         </select>
       </div>
+
+      {/* Ações em lote */}
+      {materials.length > 0 && (
+        <div className="mb-6 p-4 bg-netflix-black rounded-lg border border-gray-700">
+          <h4 className="text-white font-medium mb-3 flex items-center">
+            <svg className="w-5 h-5 mr-2 text-netflix-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+            </svg>
+            Ações em Lote ({materials.length} materiais)
+          </h4>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setShowBulkSchedule(!showBulkSchedule)}
+              disabled={isBulkSubmitting}
+              className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center text-sm"
+            >
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              Programar Liberação
+            </button>
+
+            <button
+              onClick={handleBulkUnlock}
+              disabled={isBulkSubmitting}
+              className="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center text-sm"
+            >
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path>
+              </svg>
+              Liberar Todos
+            </button>
+
+            <button
+              onClick={handleBulkLock}
+              disabled={isBulkSubmitting}
+              className="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors flex items-center text-sm"
+            >
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+              </svg>
+              Trancar Todos
+            </button>
+          </div>
+
+          {/* Formulário de programação em lote */}
+          {showBulkSchedule && (
+            <form onSubmit={handleBulkSchedule} className="mt-4 p-3 bg-gray-800 rounded-lg">
+              <label className="block text-gray-400 text-sm mb-2">
+                Data e hora para liberar todos os materiais desta aula:
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="datetime-local"
+                  value={bulkScheduleDate}
+                  onChange={(e) => setBulkScheduleDate(e.target.value)}
+                  min={getMinDatetime()}
+                  className="flex-1 bg-netflix-dark border border-gray-700 rounded px-3 py-2 text-white focus:border-netflix-red focus:outline-none"
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={isBulkSubmitting || !bulkScheduleDate}
+                  className={`px-4 py-2 ${isBulkSubmitting ? 'bg-gray-600' : 'bg-netflix-red hover:bg-red-700'} text-white rounded transition-colors`}
+                >
+                  {isBulkSubmitting ? 'Salvando...' : 'Aplicar'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowBulkSchedule(false);
+                    setBulkScheduleDate('');
+                  }}
+                  className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Isso irá trancar e programar a liberação de todos os {materials.length} materiais desta aula.
+              </p>
+            </form>
+          )}
+        </div>
+      )}
       
       {/* Formulário para adicionar/editar material */}
       {showForm && (
@@ -389,6 +684,34 @@ const MaterialsEditor = () => {
         </div>
       )}
       
+      {/* Indicador de progresso do upload */}
+      {isUploading && uploadProgress && (
+        <div className="mb-6 bg-netflix-black p-4 rounded-md border border-green-600">
+          <h4 className="text-white font-medium mb-3 flex items-center">
+            <svg className="w-5 h-5 mr-2 text-green-500 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            Enviando arquivos...
+          </h4>
+
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm text-gray-400">
+              <span>Progresso: {uploadProgress.completed} de {uploadProgress.total}</span>
+              <span>{uploadProgress.percentage}%</span>
+            </div>
+            <div className="w-full bg-gray-700 rounded-full h-2">
+              <div
+                className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${uploadProgress.percentage}%` }}
+              ></div>
+            </div>
+            <p className="text-xs text-gray-500">
+              Enviando: {uploadProgress.current}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Lista de materiais */}
       {materials.length > 0 ? (
         <div className="space-y-3">

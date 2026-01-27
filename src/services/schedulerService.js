@@ -245,9 +245,14 @@ class SchedulerService {
    * Verifica se o banner deve ser ativado
    */
   shouldActivateBanner(instance, now) {
-    return !instance.bannerEnabled && 
-           instance.banner?.scheduledVisibility && 
-           new Date(instance.banner.scheduledVisibility) <= now;
+    if (instance.bannerEnabled || !instance.banner?.scheduledVisibility) {
+      return false;
+    }
+
+    const visibilityTime = this.parseTimestamp(instance.banner.scheduledVisibility);
+    if (!visibilityTime) return false;
+
+    return visibilityTime <= now;
   }
 
   /**
@@ -312,6 +317,32 @@ class SchedulerService {
   }
 
   /**
+   * Converte um timestamp do Firestore ou string ISO para Date
+   */
+  parseTimestamp(timestamp) {
+    if (!timestamp) return null;
+
+    // Se for um Firestore Timestamp (tem seconds e nanoseconds)
+    if (timestamp.seconds !== undefined) {
+      return new Date(timestamp.seconds * 1000);
+    }
+
+    // Se for um objeto com método toDate (Firestore Timestamp)
+    if (typeof timestamp.toDate === 'function') {
+      return timestamp.toDate();
+    }
+
+    // Se for string ISO ou número
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) {
+      console.warn('[SchedulerService] Invalid timestamp:', timestamp);
+      return null;
+    }
+
+    return date;
+  }
+
+  /**
    * Verifica se um material deve ser desbloqueado
    */
   shouldUnlockMaterial(item, now) {
@@ -319,18 +350,25 @@ class SchedulerService {
     if (!item.locked) {
       return false;
     }
-    
+
     // Se já foi desbloqueado anteriormente (tem timestamp), manter desbloqueado
     if (item.unlockedAt) {
       return false;
     }
-    
+
     // Se não tem agendamento, manter bloqueado
     if (!item.scheduledUnlock) {
       return false;
     }
 
-    const unlockTime = new Date(item.scheduledUnlock);
+    const unlockTime = this.parseTimestamp(item.scheduledUnlock);
+    if (!unlockTime) {
+      console.warn('[SchedulerService] Could not parse scheduledUnlock:', item.scheduledUnlock);
+      return false;
+    }
+
+    console.log(`[SchedulerService] Checking material "${item.title}": unlock at ${unlockTime.toISOString()}, now is ${now.toISOString()}, should unlock: ${unlockTime <= now}`);
+
     return unlockTime <= now;
   }
 
@@ -376,9 +414,14 @@ class SchedulerService {
    * Verifica se um link deve ser ativado
    */
   shouldActivateLink(link, now) {
-    return !link.visible && 
-           link.scheduledVisibility && 
-           new Date(link.scheduledVisibility) <= now;
+    if (link.visible || !link.scheduledVisibility) {
+      return false;
+    }
+
+    const visibilityTime = this.parseTimestamp(link.scheduledVisibility);
+    if (!visibilityTime) return false;
+
+    return visibilityTime <= now;
   }
 
   /**

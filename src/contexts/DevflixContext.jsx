@@ -147,31 +147,56 @@ export const DevflixProvider = ({ children }) => {
     
     fetchData();
     
-    // Listen for data refresh events
+    // Função para recarregar dados do Firebase
+    const refreshData = async () => {
+      console.log('[DevflixContext] Refreshing data...');
+
+      // Clear cache
+      cacheService.invalidate(`devflix-${path}`);
+      sessionStorage.removeItem(`devflix-${path}`);
+
+      // Fetch fresh data
+      try {
+        const freshData = await getDevflixByPath(path);
+        if (isMounted && freshData) {
+          setCurrentDevflix(freshData);
+          sessionStorage.setItem(`devflix-${path}`, JSON.stringify(freshData));
+          console.log('[DevflixContext] Data refreshed successfully');
+        }
+      } catch (error) {
+        console.error('[DevflixContext] Error refreshing data:', error);
+      }
+    };
+
+    // Listen for data refresh events (do MaterialsUnlockChecker legado - pode ser removido no futuro)
     const handleRefresh = eventBus.on(MATERIAL_EVENTS.DATA_REFRESH_NEEDED, async (data) => {
       if (data.path === path) {
-        console.log('[DevflixContext] Refreshing data due to scheduled unlock');
-        
-        // Clear cache
-        cacheService.invalidate(`devflix-${path}`);
-        sessionStorage.removeItem(`devflix-${path}`);
-        
-        // Fetch fresh data
-        try {
-          const freshData = await getDevflixByPath(path);
-          if (isMounted && freshData) {
-            setCurrentDevflix(freshData);
-            sessionStorage.setItem(`devflix-${path}`, JSON.stringify(freshData));
-          }
-        } catch (error) {
-          console.error('[DevflixContext] Error refreshing data:', error);
-        }
+        console.log('[DevflixContext] DATA_REFRESH_NEEDED event received');
+        await refreshData();
       }
     });
-    
+
+    // Listen for materials synced events (do SchedulerService - principal)
+    const handleMaterialsSync = eventBus.on(MATERIAL_EVENTS.MATERIALS_SYNCED, async (data) => {
+      if (data.path === path) {
+        console.log(`[DevflixContext] MATERIALS_SYNCED event: ${data.itemsActivated} items unlocked`);
+        await refreshData();
+      }
+    });
+
+    // Listen for schedule check completed events (quando o scheduler global faz verificações)
+    const handleScheduleCheck = eventBus.on(MATERIAL_EVENTS.SCHEDULE_CHECK_COMPLETED, async (data) => {
+      if (data.hasChanges) {
+        console.log('[DevflixContext] SCHEDULE_CHECK_COMPLETED with changes, refreshing...');
+        await refreshData();
+      }
+    });
+
     return () => {
       isMounted = false;
       handleRefresh();
+      handleMaterialsSync();
+      handleScheduleCheck();
     };
   }, [path, navigate, dataInitialized]);
   
