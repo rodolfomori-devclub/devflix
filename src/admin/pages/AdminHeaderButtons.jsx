@@ -14,7 +14,7 @@ const AdminHeaderButtons = () => {
     materiais: { enabled: true, label: 'Materiais de Apoio' },
     cronograma: { enabled: true, label: 'Cronograma' },
     aquecimento: { enabled: true, label: 'Aquecimento' },
-    nossosAlunos: { enabled: true, label: 'Nossos Alunos', url: 'https://stars.devclub.com.br' },
+    nossosAlunos: { enabled: true, label: 'Alunos Transformados', url: 'https://stars.devclub.com.br' },
     aiChat: { enabled: true, label: 'Fale com a IA' }
   });
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
