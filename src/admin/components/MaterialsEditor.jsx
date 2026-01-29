@@ -164,6 +164,7 @@ const MaterialsEditor = () => {
         }
       }
       
+      // Montar dados do material
       const materialData = {
         title: formTitle,
         url: formUrl,
@@ -171,6 +172,11 @@ const MaterialsEditor = () => {
         locked: effectiveLocked,
         scheduledUnlock: effectiveScheduledUnlock
       };
+
+      // Limpar unlockedAt quando reagendar para que o scheduler não interfira
+      if (effectiveLocked && effectiveScheduledUnlock) {
+        materialData.unlockedAt = null;
+      }
       
       if (editingId) {
         // Atualizando material existente
@@ -279,10 +285,12 @@ const MaterialsEditor = () => {
       }
 
       // Atualizar todos os materiais da aula
+      // IMPORTANTE: Limpar unlockedAt para que o scheduler não interfira
       const updatedItems = materials.map(item => ({
         ...item,
         locked: true,
-        scheduledUnlock: scheduledTime.toISOString()
+        scheduledUnlock: scheduledTime.toISOString(),
+        unlockedAt: null
       }));
 
       await updateMaterials(selectedClassId, updatedItems);
