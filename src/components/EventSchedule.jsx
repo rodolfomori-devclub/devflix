@@ -2,6 +2,19 @@ import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useDevflix } from '../contexts/DevflixContext';
 import { getScheduleData } from '../firebase/firebaseService';
+import { getVideoThumbnail, buildGumletThumbnailUrl } from '../utils/videoUtils';
+
+// Helper para obter thumbnail (suporta Gumlet com collectionId/assetId)
+const getThumbnailUrl = (item) => {
+  // Se tiver thumbnail definida diretamente, usar
+  if (item.thumbnail) return item.thumbnail;
+  // Se tiver configuração do Gumlet, usar
+  if (item.gumletCollectionId && item.gumletAssetId) {
+    return buildGumletThumbnailUrl(item.gumletCollectionId, item.gumletAssetId);
+  }
+  // Fallback para detecção automática
+  return getVideoThumbnail(item.videoUrl);
+};
 
 const EventSchedule = () => {
   const { currentDevflix } = useDevflix();
@@ -209,12 +222,23 @@ const EventSchedule = () => {
 
                         {/* Thumbnail */}
                         <div className="lg:w-48 flex-shrink-0">
-                          <div className="relative rounded-lg overflow-hidden aspect-video">
-                            <img
-                              src={classItem.thumbnail}
-                              alt={classItem.title}
-                              className="w-full h-full object-cover"
-                            />
+                          <div className="relative rounded-lg overflow-hidden aspect-video bg-gradient-to-br from-gray-800 to-gray-900">
+                            {getThumbnailUrl(classItem) ? (
+                              <img
+                                src={getThumbnailUrl(classItem)}
+                                alt={classItem.title}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <svg className="w-12 h-12 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                            )}
                             <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                               <svg className="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />

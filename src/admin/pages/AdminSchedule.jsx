@@ -452,42 +452,70 @@ const AdminSchedule = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-white font-medium mb-2">URL do Vídeo</label>
-                        <div className="relative">
-                          <input
-                            type="url"
-                            value={item.videoUrl}
-                            onChange={(e) => handleItemChange(item.id, 'videoUrl', e.target.value)}
-                            placeholder="https://www.youtube.com/watch?v=... ou https://youtu.be/..."
-                            className={`w-full bg-gray-800 text-white border rounded-lg px-4 py-2 pr-10 focus:outline-none ${
-                              item.videoUrl && getYouTubeEmbedUrl(item.videoUrl) 
-                                ? 'border-green-500 focus:border-green-400' 
-                                : item.videoUrl 
-                                  ? 'border-red-500 focus:border-red-400' 
-                                  : 'border-gray-600 focus:border-netflix-red'
-                            }`}
-                          />
-                          {item.videoUrl && (
-                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                              {getYouTubeEmbedUrl(item.videoUrl) ? (
-                                <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                              ) : (
-                                <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                                </svg>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        {item.videoUrl && !getYouTubeEmbedUrl(item.videoUrl) && (
-                          <p className="text-red-400 text-sm mt-1">
-                            ⚠️ URL inválida. Use: youtube.com/watch?v=... ou youtu.be/...
-                          </p>
-                        )}
+                        <label className="block text-white font-medium mb-2">URL do Vídeo (YouTube ou Gumlet Embed)</label>
+                        <input
+                          type="url"
+                          value={item.videoUrl}
+                          onChange={(e) => handleItemChange(item.id, 'videoUrl', e.target.value)}
+                          placeholder="https://youtube.com/watch?v=... ou https://play.gumlet.io/embed/..."
+                          className="w-full bg-gray-800 text-white border border-gray-600 rounded-lg px-4 py-2 focus:border-netflix-red focus:outline-none"
+                        />
+                        <p className="text-gray-500 text-xs mt-1">
+                          YouTube: youtube.com/watch?v=... | Gumlet: play.gumlet.io/embed/...
+                        </p>
                       </div>
                     </div>
+
+                    {/* Gumlet Thumbnail Config - só aparece se for URL do Gumlet */}
+                    {item.videoUrl && item.videoUrl.includes('gumlet') && (
+                      <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-purple-400 text-lg">🎬</span>
+                          <h4 className="text-white font-medium">Configuração da Thumbnail do Gumlet</h4>
+                        </div>
+                        <p className="text-gray-400 text-sm mb-4">
+                          Para exibir a thumbnail do vídeo, preencha o Collection ID e Asset ID do Gumlet.
+                        </p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-gray-300 text-sm mb-1">Collection ID</label>
+                            <input
+                              type="text"
+                              value={item.gumletCollectionId || ''}
+                              onChange={(e) => handleItemChange(item.id, 'gumletCollectionId', e.target.value)}
+                              placeholder="Ex: 6924be9d3869244bc998995c"
+                              className="w-full bg-gray-800 text-white border border-gray-600 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-gray-300 text-sm mb-1">Asset ID</label>
+                            <input
+                              type="text"
+                              value={item.gumletAssetId || ''}
+                              onChange={(e) => handleItemChange(item.id, 'gumletAssetId', e.target.value)}
+                              placeholder="Ex: 697bbc961c1aa8b68dfb7f11"
+                              className="w-full bg-gray-800 text-white border border-gray-600 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                        {item.gumletCollectionId && item.gumletAssetId && (
+                          <div className="mt-3 p-3 bg-gray-800/50 rounded-lg">
+                            <p className="text-gray-400 text-xs mb-2">Preview da Thumbnail:</p>
+                            <img
+                              src={`https://video.gumlet.io/${item.gumletCollectionId}/${item.gumletAssetId}/thumbnail-1-0.png`}
+                              alt="Thumbnail preview"
+                              className="w-48 aspect-video object-cover rounded"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                              }}
+                            />
+                            <p className="text-green-400 text-xs mt-2">
+                              ✓ URL: https://video.gumlet.io/{item.gumletCollectionId}/{item.gumletAssetId}/thumbnail-1-0.png
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Description */}
                     <div>

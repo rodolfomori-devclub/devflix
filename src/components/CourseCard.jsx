@@ -1,6 +1,7 @@
 // src/components/CourseCard.jsx - Premium 2025 Design
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getVideoThumbnail, buildGumletThumbnailUrl } from '../utils/videoUtils';
 
 // Formatar data para exibição curta
 const formatClassDate = (isoDate) => {
@@ -34,12 +35,23 @@ const CourseCard = ({ course, basePath = '', classDates = null }) => {
   const [isHovered, setIsHovered] = useState(false);
 
   const getCourseImage = () => {
+    // 1. Usar coverImage se definida
     if (course.coverImage) {
-      return course.coverImage.startsWith('http')
-        ? course.coverImage
-        : course.coverImage;
+      return course.coverImage;
     }
-    return `/images/aula${course.id}.jpg`;
+    // 2. Se tiver configuração do Gumlet, usar
+    if (course.gumletCollectionId && course.gumletAssetId) {
+      return buildGumletThumbnailUrl(course.gumletCollectionId, course.gumletAssetId);
+    }
+    // 3. Gerar thumbnail do vídeo (YouTube ou Gumlet)
+    if (course.videoLink) {
+      const thumbnail = getVideoThumbnail(course.videoLink);
+      if (thumbnail) {
+        return thumbnail;
+      }
+    }
+    // 4. Fallback
+    return null;
   };
 
   // Obter a data da aula baseado no ID
@@ -80,16 +92,37 @@ const CourseCard = ({ course, basePath = '', classDates = null }) => {
 
       <div className="relative overflow-hidden rounded-2xl">
         {/* Thumbnail Image */}
-        <motion.img
-          src={getCourseImage()}
-          alt={`Capa da ${course.title}`}
-          className="course-card-image w-full aspect-video object-cover"
-          animate={{
-            scale: isHovered ? 1.08 : 1,
-            filter: isHovered ? 'brightness(0.4)' : 'brightness(1)',
-          }}
-          transition={{ duration: 0.4 }}
-        />
+        {getCourseImage() ? (
+          <motion.img
+            src={getCourseImage()}
+            alt={`Capa da ${course.title}`}
+            className="course-card-image w-full aspect-video object-cover"
+            animate={{
+              scale: isHovered ? 1.08 : 1,
+              filter: isHovered ? 'brightness(0.4)' : 'brightness(1)',
+            }}
+            transition={{ duration: 0.4 }}
+            onError={(e) => {
+              // Fallback para hqdefault se maxresdefault não existir
+              if (e.target.src.includes('maxresdefault')) {
+                e.target.src = e.target.src.replace('maxresdefault', 'hqdefault');
+              }
+            }}
+          />
+        ) : (
+          <motion.div
+            className="course-card-image w-full aspect-video bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center"
+            animate={{
+              scale: isHovered ? 1.08 : 1,
+              filter: isHovered ? 'brightness(0.4)' : 'brightness(1)',
+            }}
+            transition={{ duration: 0.4 }}
+          >
+            <svg className="w-16 h-16 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </motion.div>
+        )}
 
         {/* Premium badge with date */}
         <div className="absolute top-3 left-3 flex items-center gap-2">

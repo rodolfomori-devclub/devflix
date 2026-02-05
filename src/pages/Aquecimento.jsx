@@ -5,55 +5,44 @@ import { getScheduleStartData, getPolls } from '../firebase/firebaseService';
 import PromoBanner from '../components/PromoBanner';
 import FloatingWhatsAppButton from '../components/FloatingWhatsAppButton';
 import Poll from '../components/Poll';
+import { getVideoThumbnail, isGumletUrl, buildGumletThumbnailUrl } from '../utils/videoUtils';
 
-// Função para extrair ID do YouTube
-const getYouTubeVideoId = (url) => {
-  if (!url) return null;
-
-  let videoId = null;
-
-  // https://www.youtube.com/embed/VIDEO_ID
-  if (url.includes('youtube.com/embed/')) {
-    videoId = url.split('youtube.com/embed/')[1]?.split('?')[0];
+// Helper para obter thumbnail (suporta Gumlet com collectionId/assetId)
+const getThumbnailUrl = (item) => {
+  // Se tiver configuração do Gumlet, usar
+  if (item.gumletCollectionId && item.gumletAssetId) {
+    return buildGumletThumbnailUrl(item.gumletCollectionId, item.gumletAssetId);
   }
-  // https://www.youtube.com/watch?v=VIDEO_ID
-  else if (url.includes('youtube.com/watch?v=')) {
-    videoId = url.split('v=')[1]?.split('&')[0];
-  }
-  // https://youtu.be/VIDEO_ID
-  else if (url.includes('youtu.be/')) {
-    videoId = url.split('youtu.be/')[1]?.split('?')[0];
-  }
-
-  return videoId;
+  // Fallback para detecção automática
+  return getVideoThumbnail(item.videoUrl);
 };
 
-// Função para gerar URL embed
-const getYouTubeEmbedUrl = (url) => {
-  const videoId = getYouTubeVideoId(url);
-  if (videoId) {
-    return `https://www.youtube.com/embed/${videoId}`;
+// Função para gerar URL embed (YouTube ou Gumlet)
+const getEmbedUrl = (url) => {
+  if (!url) return url;
+
+  // YouTube
+  if (url.includes('youtube.com') || url.includes('youtu.be')) {
+    let videoId = null;
+    if (url.includes('youtube.com/embed/')) {
+      return url; // Já é embed
+    }
+    if (url.includes('youtube.com/watch?v=')) {
+      videoId = url.split('v=')[1]?.split('&')[0];
+    } else if (url.includes('youtu.be/')) {
+      videoId = url.split('youtu.be/')[1]?.split('?')[0];
+    }
+    if (videoId) {
+      return `https://www.youtube.com/embed/${videoId}`;
+    }
   }
+
+  // Gumlet - já deve ser URL de embed
+  if (url.includes('gumlet.io') || url.includes('gumlet.tv')) {
+    return url;
+  }
+
   return url;
-};
-
-// Função para gerar URL da thumbnail (maxresdefault = 1280x720, hqdefault = 480x360)
-const getYouTubeThumbnail = (url) => {
-  const videoId = getYouTubeVideoId(url);
-  if (videoId) {
-    // Usar maxresdefault para maior qualidade (1280x720)
-    return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
-  }
-  return null;
-};
-
-// Fallback para thumbnail de menor qualidade caso maxresdefault não exista
-const getYouTubeThumbnailFallback = (url) => {
-  const videoId = getYouTubeVideoId(url);
-  if (videoId) {
-    return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-  }
-  return null;
 };
 
 // Mapeamento de ícones para presentes
@@ -387,17 +376,27 @@ const Aquecimento = () => {
                       >
                         {/* Thumbnail */}
                         <div className="relative aspect-video bg-gray-800">
-                          <img
-                            src={getYouTubeThumbnail(item.videoUrl)}
-                            alt={item.title}
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                            loading="lazy"
-                            onError={(e) => {
-                              // Fallback para hqdefault se maxresdefault não existir
-                              e.target.onerror = null;
-                              e.target.src = getYouTubeThumbnailFallback(item.videoUrl);
-                            }}
-                          />
+                          {getThumbnailUrl(item) ? (
+                            <img
+                              src={getThumbnailUrl(item)}
+                              alt={item.title}
+                              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                              loading="lazy"
+                              onError={(e) => {
+                                // Fallback para hqdefault se maxresdefault não existir (YouTube)
+                                if (e.target.src.includes('maxresdefault')) {
+                                  e.target.onerror = null;
+                                  e.target.src = e.target.src.replace('maxresdefault', 'hqdefault');
+                                }
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
+                              <svg className="w-16 h-16 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z" />
+                              </svg>
+                            </div>
+                          )}
 
                           {/* Gradient overlay */}
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
@@ -526,13 +525,15 @@ const Aquecimento = () => {
             {/* Video Container */}
             <div className="aspect-video bg-black rounded-lg overflow-hidden shadow-2xl">
               <iframe
-                src={getYouTubeEmbedUrl(videoModal.videoUrl)}
+                src={getEmbedUrl(videoModal.videoUrl)}
                 width="100%"
                 height="100%"
                 frameBorder="0"
                 allowFullScreen
                 title={videoModal.title}
-                allow="autoplay"
+                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
+                referrerPolicy="origin"
+                style={{ border: 'none' }}
               ></iframe>
             </div>
 
