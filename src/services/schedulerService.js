@@ -1,18 +1,15 @@
 /**
- * Scheduler Service - Serviço centralizado e robusto para gerenciamento de agendamentos
- * 
- * Responsabilidades:
- * - Verificação e ativação de materiais agendados
- * - Sincronização com Firebase
- * - Notificação de mudanças via EventBus
- * - Invalidação de cache quando necessário
- * - Tratamento de erros e retry logic
+ * Scheduler Service - Serviço centralizado para gerenciamento de agendamentos
+ *
+ * CORREÇÃO: Agora lê dados frescos do Firebase antes de escrever,
+ * evitando race conditions que sobrescreviam materiais salvos pelo admin.
  */
 
-import { 
-  collection, 
-  getDocs, 
-  doc, 
+import {
+  collection,
+  getDocs,
+  getDoc,
+  doc,
   updateDoc,
   Timestamp
 } from 'firebase/firestore';
@@ -30,9 +27,6 @@ class SchedulerService {
     this.maxErrors = 3;
   }
 
-  /**
-   * Inicia o serviço de agendamento
-   */
   start() {
     if (this.checkInterval) {
       console.log('[SchedulerService] Already running');
@@ -40,19 +34,12 @@ class SchedulerService {
     }
 
     console.log('[SchedulerService] Starting scheduler service');
-    
-    // Verificar imediatamente
     this.checkScheduledItems();
-    
-    // Configurar verificação periódica
     this.checkInterval = setInterval(() => {
       this.checkScheduledItems();
     }, this.CHECK_INTERVAL);
   }
 
-  /**
-   * Para o serviço de agendamento
-   */
   stop() {
     if (this.checkInterval) {
       clearInterval(this.checkInterval);
@@ -61,13 +48,8 @@ class SchedulerService {
     }
   }
 
-  /**
-   * Verifica e ativa todos os itens agendados
-   */
   async checkScheduledItems() {
-    // Evitar verificações simultâneas
     if (this.isChecking) {
-      console.log('[SchedulerService] Check already in progress, skipping...');
       return;
     }
 
@@ -75,19 +57,13 @@ class SchedulerService {
     const startTime = Date.now();
 
     try {
-      console.log('[SchedulerService] Checking scheduled items...');
-      
       const results = await this.processAllScheduledItems();
-      
-      // Log resultados
       const duration = Date.now() - startTime;
       console.log(`[SchedulerService] Check completed in ${duration}ms`, results);
-      
-      // Resetar contador de erros em caso de sucesso
+
       this.errorCount = 0;
       this.lastCheckTime = new Date();
-      
-      // Emitir evento se houve mudanças
+
       if (results.itemsActivated > 0) {
         eventBus.emit(MATERIAL_EVENTS.SCHEDULE_CHECK_COMPLETED, {
           hasChanges: true,
@@ -95,36 +71,27 @@ class SchedulerService {
           types: results.activatedTypes
         });
       }
-      
+
       return results;
-      
     } catch (error) {
       console.error('[SchedulerService] Error checking scheduled items:', error);
-      
       this.errorCount++;
-      
-      // Se muitos erros consecutivos, parar o serviço temporariamente
+
       if (this.errorCount >= this.maxErrors) {
         console.error('[SchedulerService] Too many errors, pausing service for 1 minute');
         this.stop();
-        
-        // Reiniciar após 1 minuto
         setTimeout(() => {
           this.errorCount = 0;
           this.start();
         }, 60000);
       }
-      
+
       throw error;
-      
     } finally {
       this.isChecking = false;
     }
   }
 
-  /**
-   * Processa todos os itens agendados de todas as instâncias
-   */
   async processAllScheduledItems() {
     const now = new Date();
     const results = {
@@ -135,43 +102,35 @@ class SchedulerService {
     };
 
     try {
-      // Buscar todas as instâncias DevFlix
       const devflixCollection = collection(db, 'devflix-instances');
       const snapshot = await getDocs(devflixCollection);
-      
+
       if (snapshot.empty) {
-        console.log('[SchedulerService] No instances found');
         return results;
       }
 
-      const instances = snapshot.docs.map(doc => ({
-        id: doc.id, 
-        ...doc.data()
+      const instances = snapshot.docs.map(d => ({
+        id: d.id,
+        ...d.data()
       }));
 
-      console.log(`[SchedulerService] Processing ${instances.length} instances`);
-
-      // Processar cada instância
       for (const instance of instances) {
         try {
           const instanceResults = await this.processInstance(instance, now);
-          
+
           if (instanceResults.hasChanges) {
             results.itemsActivated += instanceResults.itemsActivated;
             results.activatedTypes = [...new Set([...results.activatedTypes, ...instanceResults.types])];
-            
-            // Invalidar cache da instância
+
             cacheService.invalidate(`devflix-${instance.path}`);
-            
-            // Emitir evento específico da instância
+
             eventBus.emit(MATERIAL_EVENTS.MATERIALS_SYNCED, {
               path: instance.path,
               itemsActivated: instanceResults.itemsActivated
             });
           }
-          
+
           results.processedInstances++;
-          
         } catch (error) {
           console.error(`[SchedulerService] Error processing instance ${instance.id}:`, error);
           results.errors.push({
@@ -180,7 +139,6 @@ class SchedulerService {
           });
         }
       }
-
     } catch (error) {
       console.error('[SchedulerService] Fatal error in processAllScheduledItems:', error);
       throw error;
@@ -190,7 +148,8 @@ class SchedulerService {
   }
 
   /**
-   * Processa uma instância específica
+   * Processa uma instância - primeiro identifica O QUE precisa mudar,
+   * depois relê os dados frescos do Firebase e aplica SÓ as mudanças necessárias.
    */
   async processInstance(instance, now) {
     const results = {
@@ -199,41 +158,65 @@ class SchedulerService {
       types: []
     };
 
+    // 1. Verificar se o banner precisa ser ativado
+    const needsBannerActivation = this.shouldActivateBanner(instance, now);
+
+    // 2. Identificar quais materiais precisam ser desbloqueados (por ID)
+    const materialsToUnlock = this.findMaterialsToUnlock(instance, now);
+
+    // 3. Verificar quais links precisam ser ativados (por ID)
+    const linksToActivate = this.findLinksToActivate(instance, now);
+
+    const hasAnythingToUpdate = needsBannerActivation || materialsToUnlock.length > 0 || linksToActivate.length > 0;
+
+    if (!hasAnythingToUpdate) {
+      return results;
+    }
+
+    // CORREÇÃO: Reler dados frescos do Firebase antes de escrever
+    const freshInstance = await this.getFreshInstance(instance.id);
+    if (!freshInstance) {
+      console.warn(`[SchedulerService] Instance ${instance.id} not found on re-read, skipping`);
+      return results;
+    }
+
     const updates = {};
 
-    // 1. Verificar banner
-    if (this.shouldActivateBanner(instance, now)) {
+    // Aplicar ativação do banner nos dados frescos
+    if (needsBannerActivation && this.shouldActivateBanner(freshInstance, now)) {
       updates.bannerEnabled = true;
       updates.banner = {
-        ...instance.banner,
+        ...freshInstance.banner,
         scheduledVisibility: null
       };
       results.itemsActivated++;
       results.types.push('banner');
       results.hasChanges = true;
-      
-      console.log(`[SchedulerService] Activating banner for: ${instance.name}`);
+      console.log(`[SchedulerService] Activating banner for: ${freshInstance.name}`);
     }
 
-    // 2. Verificar materiais
-    const materialsResult = this.processInstanceMaterials(instance, now);
-    if (materialsResult.hasChanges) {
-      updates.materials = materialsResult.materials;
-      results.itemsActivated += materialsResult.count;
-      results.types.push('material');
-      results.hasChanges = true;
+    // Aplicar desbloqueio de materiais nos dados frescos (só os itens específicos)
+    if (materialsToUnlock.length > 0 && freshInstance.materials) {
+      const updatedMaterials = this.applyMaterialUnlocks(freshInstance.materials, materialsToUnlock, now);
+      if (updatedMaterials) {
+        updates.materials = updatedMaterials.materials;
+        results.itemsActivated += updatedMaterials.count;
+        results.types.push('material');
+        results.hasChanges = true;
+      }
     }
 
-    // 3. Verificar links do cabeçalho
-    const linksResult = this.processInstanceLinks(instance, now);
-    if (linksResult.hasChanges) {
-      updates.headerLinks = linksResult.links;
-      results.itemsActivated += linksResult.count;
-      results.types.push('link');
-      results.hasChanges = true;
+    // Aplicar ativação de links nos dados frescos (só os itens específicos)
+    if (linksToActivate.length > 0 && freshInstance.headerLinks) {
+      const updatedLinks = this.applyLinkActivations(freshInstance.headerLinks, linksToActivate, now);
+      if (updatedLinks) {
+        updates.headerLinks = updatedLinks.links;
+        results.itemsActivated += updatedLinks.count;
+        results.types.push('link');
+        results.hasChanges = true;
+      }
     }
 
-    // Aplicar atualizações se houver mudanças
     if (results.hasChanges) {
       await this.updateInstance(instance.id, updates);
     }
@@ -242,8 +225,124 @@ class SchedulerService {
   }
 
   /**
-   * Verifica se o banner deve ser ativado
+   * Relê a instância direto do Firebase para ter dados frescos
    */
+  async getFreshInstance(instanceId) {
+    try {
+      const docRef = doc(db, 'devflix-instances', instanceId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() };
+      }
+      return null;
+    } catch (error) {
+      console.error(`[SchedulerService] Error re-reading instance ${instanceId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Identifica quais materiais precisam ser desbloqueados (retorna lista de IDs)
+   */
+  findMaterialsToUnlock(instance, now) {
+    const toUnlock = [];
+
+    if (!instance.materials || instance.materials.length === 0) {
+      return toUnlock;
+    }
+
+    for (const classMaterials of instance.materials) {
+      if (!classMaterials?.items || classMaterials.items.length === 0) {
+        continue;
+      }
+
+      for (const item of classMaterials.items) {
+        if (this.shouldUnlockMaterial(item, now)) {
+          toUnlock.push(item.id);
+        }
+        // Se já foi desbloqueado mas está trancado de novo (bug de re-lock)
+        if (item.unlockedAt && item.locked) {
+          toUnlock.push(item.id);
+        }
+      }
+    }
+
+    return toUnlock;
+  }
+
+  /**
+   * Aplica desbloqueio APENAS nos materiais identificados, usando dados frescos
+   */
+  applyMaterialUnlocks(freshMaterials, materialIds, now) {
+    let count = 0;
+    const materials = freshMaterials.map(classMaterials => {
+      if (!classMaterials?.items || classMaterials.items.length === 0) {
+        return classMaterials;
+      }
+
+      const updatedItems = classMaterials.items.map(item => {
+        if (materialIds.includes(item.id) && item.locked) {
+          console.log(`[SchedulerService] Unlocking material: ${item.title}`);
+          count++;
+          return {
+            ...item,
+            locked: false,
+            scheduledUnlock: null,
+            unlockedAt: now.toISOString()
+          };
+        }
+        return item;
+      });
+
+      return { ...classMaterials, items: updatedItems };
+    });
+
+    if (count === 0) return null;
+    return { materials, count };
+  }
+
+  /**
+   * Identifica quais links precisam ser ativados (retorna lista de IDs)
+   */
+  findLinksToActivate(instance, now) {
+    const toActivate = [];
+
+    if (!instance.headerLinks || instance.headerLinks.length === 0) {
+      return toActivate;
+    }
+
+    for (const link of instance.headerLinks) {
+      if (this.shouldActivateLink(link, now)) {
+        toActivate.push(link.id);
+      }
+    }
+
+    return toActivate;
+  }
+
+  /**
+   * Aplica ativação APENAS nos links identificados, usando dados frescos
+   */
+  applyLinkActivations(freshLinks, linkIds, now) {
+    let count = 0;
+    const links = freshLinks.map(link => {
+      if (linkIds.includes(link.id) && !link.visible) {
+        console.log(`[SchedulerService] Activating link: ${link.title}`);
+        count++;
+        return {
+          ...link,
+          visible: true,
+          scheduledVisibility: null,
+          activatedAt: now.toISOString()
+        };
+      }
+      return link;
+    });
+
+    if (count === 0) return null;
+    return { links, count };
+  }
+
   shouldActivateBanner(instance, now) {
     if (instance.bannerEnabled || !instance.banner?.scheduledVisibility) {
       return false;
@@ -255,84 +354,20 @@ class SchedulerService {
     return visibilityTime <= now;
   }
 
-  /**
-   * Processa materiais de uma instância
-   */
-  processInstanceMaterials(instance, now) {
-    const result = {
-      hasChanges: false,
-      materials: [...(instance.materials || [])],
-      count: 0
-    };
-
-    if (!instance.materials || instance.materials.length === 0) {
-      return result;
-    }
-
-    for (let i = 0; i < result.materials.length; i++) {
-      const classMaterials = result.materials[i];
-      
-      if (!classMaterials?.items || classMaterials.items.length === 0) {
-        continue;
-      }
-
-      const updatedItems = classMaterials.items.map(item => {
-        // Se já foi desbloqueado anteriormente, garantir que permanece desbloqueado
-        if (item.unlockedAt && item.locked) {
-          console.log(`[SchedulerService] Fixing re-locked material: ${item.title}`);
-          result.count++;
-          result.hasChanges = true;
-          return { 
-            ...item, 
-            locked: false, 
-            scheduledUnlock: null
-          };
-        }
-        
-        // Verificar se deve ser desbloqueado agora
-        if (this.shouldUnlockMaterial(item, now)) {
-          console.log(`[SchedulerService] Unlocking material: ${item.title}`);
-          result.count++;
-          result.hasChanges = true;
-          
-          // Desbloquear e limpar agendamento
-          return { 
-            ...item, 
-            locked: false, 
-            scheduledUnlock: null,
-            unlockedAt: now.toISOString() // Adicionar timestamp de desbloqueio
-          };
-        }
-        
-        // Manter item como está
-        return item;
-      });
-
-      if (JSON.stringify(updatedItems) !== JSON.stringify(classMaterials.items)) {
-        result.materials[i] = { ...classMaterials, items: updatedItems };
-      }
-    }
-
-    return result;
-  }
-
-  /**
-   * Converte um timestamp do Firestore ou string ISO para Date
-   */
   parseTimestamp(timestamp) {
     if (!timestamp) return null;
 
-    // Se for um Firestore Timestamp (tem seconds e nanoseconds)
+    // Firestore Timestamp com seconds
     if (timestamp.seconds !== undefined) {
       return new Date(timestamp.seconds * 1000);
     }
 
-    // Se for um objeto com método toDate (Firestore Timestamp)
+    // Firestore Timestamp com toDate()
     if (typeof timestamp.toDate === 'function') {
       return timestamp.toDate();
     }
 
-    // Se for string ISO ou número
+    // String ISO ou número
     const date = new Date(timestamp);
     if (isNaN(date.getTime())) {
       console.warn('[SchedulerService] Invalid timestamp:', timestamp);
@@ -342,77 +377,17 @@ class SchedulerService {
     return date;
   }
 
-  /**
-   * Verifica se um material deve ser desbloqueado
-   */
   shouldUnlockMaterial(item, now) {
-    // Se já está desbloqueado, não fazer nada
-    if (!item.locked) {
-      return false;
-    }
-
-    // Se já foi desbloqueado anteriormente (tem timestamp), manter desbloqueado
-    if (item.unlockedAt) {
-      return false;
-    }
-
-    // Se não tem agendamento, manter bloqueado
-    if (!item.scheduledUnlock) {
-      return false;
-    }
+    if (!item.locked) return false;
+    if (item.unlockedAt) return false;
+    if (!item.scheduledUnlock) return false;
 
     const unlockTime = this.parseTimestamp(item.scheduledUnlock);
-    if (!unlockTime) {
-      console.warn('[SchedulerService] Could not parse scheduledUnlock:', item.scheduledUnlock);
-      return false;
-    }
-
-    console.log(`[SchedulerService] Checking material "${item.title}": unlock at ${unlockTime.toISOString()}, now is ${now.toISOString()}, should unlock: ${unlockTime <= now}`);
+    if (!unlockTime) return false;
 
     return unlockTime <= now;
   }
 
-  /**
-   * Processa links do cabeçalho de uma instância
-   */
-  processInstanceLinks(instance, now) {
-    const result = {
-      hasChanges: false,
-      links: [...(instance.headerLinks || [])],
-      count: 0
-    };
-
-    if (!instance.headerLinks || instance.headerLinks.length === 0) {
-      return result;
-    }
-
-    const updatedLinks = result.links.map(link => {
-      if (this.shouldActivateLink(link, now)) {
-        console.log(`[SchedulerService] Activating link: ${link.title}`);
-        result.count++;
-        result.hasChanges = true;
-        
-        // Tornar visível e limpar agendamento
-        return { 
-          ...link, 
-          visible: true, 
-          scheduledVisibility: null,
-          activatedAt: now.toISOString() // Adicionar timestamp de ativação
-        };
-      }
-      return link;
-    });
-
-    if (result.hasChanges) {
-      result.links = updatedLinks;
-    }
-
-    return result;
-  }
-
-  /**
-   * Verifica se um link deve ser ativado
-   */
   shouldActivateLink(link, now) {
     if (link.visible || !link.scheduledVisibility) {
       return false;
@@ -424,9 +399,6 @@ class SchedulerService {
     return visibilityTime <= now;
   }
 
-  /**
-   * Atualiza uma instância no Firebase
-   */
   async updateInstance(instanceId, updates) {
     try {
       const instanceRef = doc(db, 'devflix-instances', instanceId);
@@ -434,26 +406,18 @@ class SchedulerService {
         ...updates,
         lastSchedulerUpdate: Timestamp.now()
       });
-      
       console.log(`[SchedulerService] Instance ${instanceId} updated successfully`);
-      
     } catch (error) {
       console.error(`[SchedulerService] Error updating instance ${instanceId}:`, error);
       throw error;
     }
   }
 
-  /**
-   * Força verificação manual
-   */
   async forceCheck() {
     console.log('[SchedulerService] Force check requested');
     return await this.checkScheduledItems();
   }
 
-  /**
-   * Obtém status do serviço
-   */
   getStatus() {
     return {
       isRunning: !!this.checkInterval,
@@ -465,11 +429,6 @@ class SchedulerService {
   }
 }
 
-// Criar instância única (Singleton)
 const schedulerService = new SchedulerService();
-
-// Exportar serviço
 export default schedulerService;
-
-// Exportar função legada para compatibilidade
 export const checkAndActivateScheduledItems = () => schedulerService.checkScheduledItems();

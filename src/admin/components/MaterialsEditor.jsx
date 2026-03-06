@@ -1,5 +1,5 @@
-// src/admin/components/MaterialsEditor.jsx (correção agendamento)
-import { useState, useEffect, useCallback, useRef } from 'react';
+// src/admin/components/MaterialsEditor.jsx
+import { useState, useEffect, useRef } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 import ScheduledUnlockField from './ScheduledUnlockField';
 import { uploadMultipleFiles, formatFileName } from '../../firebase/storageService';
@@ -58,67 +58,9 @@ const MaterialsEditor = () => {
     }
   }, [currentDevflix, selectedClassId]);
   
-  // CORREÇÃO: Implementar verificação de agendamento como useCallback para evitar dependência circular
-  const checkScheduledMaterials = useCallback(async () => {
-    if (!materials.length || !selectedClassId) return;
-    
-    const now = new Date().getTime();
-    const materialsToUnlock = materials.filter(material => 
-      material.locked && 
-      material.scheduledUnlock && 
-      new Date(material.scheduledUnlock).getTime() <= now
-    );
-    
-    // Se houver materiais para desbloquear
-    if (materialsToUnlock.length > 0) {
-      console.log(`Found ${materialsToUnlock.length} materials to unlock:`, 
-        materialsToUnlock.map(m => m.title));
-      
-      // Criar cópia atualizada dos materiais
-      const updatedItems = materials.map(item => {
-        if (
-          item.locked && 
-          item.scheduledUnlock && 
-          new Date(item.scheduledUnlock).getTime() <= now
-        ) {
-          return {
-            ...item, 
-            locked: false,
-            scheduledUnlock: null // Limpar o agendamento após desbloquear
-          };
-        }
-        return item;
-      });
-      
-      try {
-        // Atualizar no Firebase
-        await updateMaterials(selectedClassId, updatedItems);
-        
-        // Atualizar o estado local
-        setMaterials(updatedItems);
-        
-        console.log("Materials successfully unlocked");
-        return true;
-      } catch (error) {
-        console.error('Erro ao atualizar materiais agendados:', error);
-        return false;
-      }
-    }
-    
-    return false;
-  }, [materials, selectedClassId, updateMaterials]);
-  
-  // Verificar materiais agendados ao carregar e a cada 15 segundos
-  useEffect(() => {
-    // Verificar imediatamente
-    checkScheduledMaterials();
-    
-    // E depois a cada 15 segundos
-    const interval = setInterval(checkScheduledMaterials, 15000);
-    
-    return () => clearInterval(interval);
-  }, [checkScheduledMaterials]);
-  
+  // O agendamento de materiais é gerenciado pelo SchedulerService global (SchedulerChecker).
+  // Não precisamos de verificação duplicada aqui.
+
   const resetForm = () => {
     setFormTitle('');
     setFormUrl('');
