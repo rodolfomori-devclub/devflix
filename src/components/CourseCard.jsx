@@ -1,5 +1,5 @@
 // src/components/CourseCard.jsx - Premium 2025 Design
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getVideoThumbnail, buildGumletThumbnailUrl } from '../utils/videoUtils';
 
@@ -33,10 +33,16 @@ const getClassDateKey = (classId) => {
 
 const CourseCard = ({ course, basePath = '', classDates = null }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
-  const getCourseImage = () => {
-    // 1. Usar coverImage se definida
-    if (course.coverImage) {
+  // Verificar se coverImage é um caminho local inválido (ex: /images/aula1.jpg)
+  const isLocalPlaceholder = (url) => {
+    return url && url.startsWith('/images/') && !url.startsWith('http');
+  };
+
+  const imageSource = useMemo(() => {
+    // 1. Usar coverImage se for uma URL válida (não placeholder local)
+    if (course.coverImage && !isLocalPlaceholder(course.coverImage)) {
       return course.coverImage;
     }
     // 2. Se tiver configuração do Gumlet, usar
@@ -52,7 +58,20 @@ const CourseCard = ({ course, basePath = '', classDates = null }) => {
     }
     // 4. Fallback
     return null;
-  };
+  }, [course]);
+
+  // Fallback: se a imagem principal falhar, tentar thumbnail do vídeo
+  const fallbackImage = useMemo(() => {
+    if (course.videoLink) {
+      return getVideoThumbnail(course.videoLink);
+    }
+    if (course.gumletCollectionId && course.gumletAssetId) {
+      return buildGumletThumbnailUrl(course.gumletCollectionId, course.gumletAssetId);
+    }
+    return null;
+  }, [course]);
+
+  const currentImage = imageError && fallbackImage ? fallbackImage : imageSource;
 
   // Obter a data da aula baseado no ID
   const getClassDate = () => {
@@ -92,9 +111,9 @@ const CourseCard = ({ course, basePath = '', classDates = null }) => {
 
       <div className="relative overflow-hidden rounded-2xl">
         {/* Thumbnail Image */}
-        {getCourseImage() ? (
+        {currentImage ? (
           <motion.img
-            src={getCourseImage()}
+            src={currentImage}
             alt={`Capa da ${course.title}`}
             className="course-card-image w-full aspect-video object-cover"
             animate={{
@@ -106,6 +125,8 @@ const CourseCard = ({ course, basePath = '', classDates = null }) => {
               // Fallback para hqdefault se maxresdefault não existir
               if (e.target.src.includes('maxresdefault')) {
                 e.target.src = e.target.src.replace('maxresdefault', 'hqdefault');
+              } else if (!imageError) {
+                setImageError(true);
               }
             }}
           />

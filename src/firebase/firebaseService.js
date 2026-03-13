@@ -559,30 +559,38 @@ export const togglePublishStatus = async (instanceId, isPublished) => {
 };
 
 // Atualizar materiais de apoio de uma aula
+// CORREÇÃO: Lê dados frescos do Firebase imediatamente antes de escrever,
+// e escreve de volta de forma atômica para evitar race conditions.
 export const updateClassMaterials = async (instanceId, classId, materials) => {
   try {
-    const instance = await getDevflixById(instanceId);
-    
-    if (!instance) {
+    const docRef = doc(devflixCollection, instanceId);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
       throw new Error("Instância não encontrada");
     }
-    
-    // Verificar se já existe materiais para esta aula
-    const materialIndex = instance.materials.findIndex(m => m.classId === classId);
-    
+
+    const currentData = docSnap.data();
+    const currentMaterials = currentData.materials || [];
+
+    const materialIndex = currentMaterials.findIndex(m => m.classId === classId);
+
     let updatedMaterials;
-    
+
     if (materialIndex === -1) {
-      // Se não existe, adicionar novo
-      updatedMaterials = [...instance.materials, { classId, items: materials }];
+      updatedMaterials = [...currentMaterials, { classId, items: materials }];
     } else {
-      // Se existe, atualizar existente
-      updatedMaterials = instance.materials.map(item => 
+      updatedMaterials = currentMaterials.map(item =>
         item.classId === classId ? { classId, items: materials } : item
       );
     }
-    
-    await updateDevflixInstance(instanceId, { materials: updatedMaterials });
+
+    // Escrever diretamente no documento sem passar por updateDevflixInstance
+    await updateDoc(docRef, {
+      materials: updatedMaterials,
+      updatedAt: serverTimestamp()
+    });
+
     return true;
   } catch (error) {
     console.error("Erro ao atualizar materiais:", error);
@@ -591,20 +599,28 @@ export const updateClassMaterials = async (instanceId, classId, materials) => {
 };
 
 // Atualizar informações de uma aula
+// CORREÇÃO: Lê dados frescos do Firebase antes de escrever
 export const updateClassInfo = async (instanceId, classId, classData) => {
   try {
-    const instance = await getDevflixById(instanceId);
-    
-    if (!instance) {
+    const docRef = doc(devflixCollection, instanceId);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
       throw new Error("Instância não encontrada");
     }
-    
-    // Atualizar informações desta aula
-    const updatedClasses = instance.classes.map(item => 
+
+    const currentData = docSnap.data();
+    const currentClasses = currentData.classes || [];
+
+    const updatedClasses = currentClasses.map(item =>
       item.id === classId ? { ...item, ...classData } : item
     );
-    
-    await updateDevflixInstance(instanceId, { classes: updatedClasses });
+
+    await updateDoc(docRef, {
+      classes: updatedClasses,
+      updatedAt: serverTimestamp()
+    });
+
     return true;
   } catch (error) {
     console.error("Erro ao atualizar informações da aula:", error);
