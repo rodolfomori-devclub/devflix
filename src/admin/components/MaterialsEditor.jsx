@@ -2,6 +2,29 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 import ScheduledUnlockField from './ScheduledUnlockField';
+
+// São Paulo é UTC-3 fixo (Brasil aboliu horário de verão em 2019)
+const SAO_PAULO_OFFSET = '-03:00';
+
+/** Converte datetime-local (São Paulo) para ISO UTC */
+const saoPauloLocalToUTC = (localDateStr) => {
+  if (!localDateStr) return null;
+  const date = new Date(localDateStr + ':00' + SAO_PAULO_OFFSET);
+  if (isNaN(date.getTime())) return null;
+  return date.toISOString();
+};
+
+/** Retorna datetime mínimo (agora +1min) no horário de São Paulo */
+const getMinDatetimeSP = () => {
+  const now = new Date(Date.now() + 60000);
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false
+  }).formatToParts(now);
+  const get = (type) => parts.find(p => p.type === type)?.value || '00';
+  return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`;
+};
 import { uploadMultipleFiles, formatFileName } from '../../firebase/storageService';
 
 const MaterialsEditor = () => {
@@ -216,7 +239,15 @@ const MaterialsEditor = () => {
     setIsBulkSubmitting(true);
 
     try {
-      const scheduledTime = new Date(bulkScheduleDate);
+      // Converter datetime-local (São Paulo) para UTC
+      const utcIso = saoPauloLocalToUTC(bulkScheduleDate);
+      if (!utcIso) {
+        alert('Data inválida.');
+        setIsBulkSubmitting(false);
+        return;
+      }
+
+      const scheduledTime = new Date(utcIso);
       const now = new Date();
 
       // Se a data já passou, não permitir
@@ -231,14 +262,14 @@ const MaterialsEditor = () => {
       const updatedItems = materials.map(item => ({
         ...item,
         locked: true,
-        scheduledUnlock: scheduledTime.toISOString(),
+        scheduledUnlock: utcIso,
         unlockedAt: null
       }));
 
       await updateMaterials(selectedClassId, updatedItems);
       setMaterials(updatedItems);
 
-      alert(`${materials.length} materiais programados para ${scheduledTime.toLocaleString('pt-BR')}!`);
+      alert(`${materials.length} materiais programados para ${scheduledTime.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}!`);
       setShowBulkSchedule(false);
       setBulkScheduleDate('');
     } catch (error) {
@@ -378,15 +409,7 @@ const MaterialsEditor = () => {
   };
 
   // Formatar datetime-local mínimo
-  const getMinDatetime = () => {
-    const now = new Date();
-    now.setMinutes(now.getMinutes() + 1);
-    return `${now.getFullYear()}-${
-      String(now.getMonth() + 1).padStart(2, '0')}-${
-      String(now.getDate()).padStart(2, '0')}T${
-      String(now.getHours()).padStart(2, '0')}:${
-      String(now.getMinutes()).padStart(2, '0')}`;
-  };
+  const getMinDatetime = () => getMinDatetimeSP();
   
   if (!currentDevflix) {
     return (
