@@ -36,10 +36,10 @@ const ProtectedRoute = lazy(() => import('./admin/components/ProtectedRoute'));
 import { AdminProvider } from './admin/contexts/AdminContext';
 import { DevflixProvider } from './contexts/DevflixContext';
 import { AuthProvider } from './contexts/AuthContext';
-import SchedulerChecker from './components/SchedulerChecker';
-// NOTA: MaterialsUnlockChecker foi removido para corrigir bug de materiais desaparecendo.
-// Agora apenas o SchedulerChecker (global) é responsável pelo desbloqueio de materiais,
-// evitando conflitos entre múltiplos sistemas competindo pelo mesmo recurso.
+// NOTA: SchedulerChecker foi removido do frontend público.
+// O desbloqueio de materiais/banners agendados é feito no DevflixContext
+// no momento do render, sem escrever no Firebase (evita que visitantes
+// com relógio adiantado desbloqueem conteúdo cedo para todo mundo).
 
 // Simplified Aula Page Component
 const AulaPage = ({ match }) => {
@@ -87,8 +87,7 @@ function App() {
     <Router>
       <AuthProvider>
         <AdminProvider>
-          {/* Add scheduler checker */}
-          <SchedulerChecker />
+          {/* Scheduler removido do público - unlock é feito no render via DevflixContext */}
           
           {isLoading ? (
             <Loading />
