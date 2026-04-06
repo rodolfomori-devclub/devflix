@@ -2,9 +2,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAdmin } from '../contexts/AdminContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 const AdminHeader = () => {
   const { currentDevflix, devflixInstances, selectDevflix } = useAdmin();
+  const { logout, currentUser } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   return (
@@ -50,7 +52,12 @@ const AdminHeader = () => {
           )}
         </div>
         
-        <div className="flex items-center">
+        <div className="flex items-center gap-4">
+          {currentUser && (
+            <span className="text-gray-400 text-sm">
+              {currentUser.email}
+            </span>
+          )}
           <Link 
             to="/"
             className="text-gray-400 hover:text-white transition-colors"
@@ -59,6 +66,16 @@ const AdminHeader = () => {
           >
             Ver Site
           </Link>
+          <button
+            onClick={logout}
+            className="flex items-center text-gray-400 hover:text-netflix-red transition-colors"
+            title="Sair"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+            </svg>
+            <span className="ml-1">Sair</span>
+          </button>
         </div>
       </div>
     </header>

@@ -12,6 +12,7 @@ const Home = lazy(() => import('./pages/Home'));
 const Materiais = lazy(() => import('./pages/Materiais'));
 const Cronograma = lazy(() => import('./pages/Cronograma'));
 const Aquecimento = lazy(() => import('./pages/Aquecimento'));
+const OAuthCallback = lazy(() => import('./pages/OAuthCallback'));
 import CountdownBanner from './components/CountdownBanner';
 
 // Admin components - lazy loaded
@@ -29,7 +30,6 @@ const AdminAboutCourse = lazy(() => import('./admin/pages/AdminAboutCourse'));
 const AdminTexts = lazy(() => import('./admin/pages/AdminTexts'));
 const AdminPolls = lazy(() => import('./admin/pages/AdminPolls'));
 const BannerPreview = lazy(() => import('./admin/pages/BannerPreview'));
-const Login = lazy(() => import('./admin/pages/Login'));
 const ProtectedRoute = lazy(() => import('./admin/components/ProtectedRoute'));
 
 // Context Providers
@@ -99,10 +99,10 @@ function App() {
               {/* Dynamic error route handler */}
               <Route path="/error" element={<ErrorRouteHandler />} />
               
-              {/* Login Route */}
-              <Route path="/admin/login" element={
+              {/* OAuth Callback Route */}
+              <Route path="/callback" element={
                 <Suspense fallback={<Loading />}>
-                  <Login />
+                  <OAuthCallback />
                 </Suspense>
               } />
               

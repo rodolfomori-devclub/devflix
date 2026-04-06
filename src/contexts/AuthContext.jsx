@@ -1,60 +1,73 @@
 // src/contexts/AuthContext.jsx
-import { createContext, useContext, useState, useEffect } from 'react';
-import { 
-  loginWithEmailPassword, 
-  logout, 
-  onAuthStateChange, 
-  getCurrentUser 
-} from '../firebase/authService';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { VaultAuth } from '../lib/vault-sdk.js';
 
-// Criar o contexto
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
-// Provedor do contexto
+export const useAuth = () => useContext(AuthContext);
+
+// Vault configuration
+const vault = new VaultAuth({
+  vaultUrl: import.meta.env.VITE_VAULT_URL || "http://localhost:4000",
+  clientId: import.meta.env.VITE_VAULT_CLIENT_ID || "",
+  redirectUri: import.meta.env.VITE_VAULT_REDIRECT_URI || `${window.location.origin}/callback`,
+});
+
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  // Efeito para observar mudanças no estado de autenticação
-  useEffect(() => {
-    const unsubscribe = onAuthStateChange((user) => {
-      setCurrentUser(user);
-      setLoading(false);
-    });
-
-    // Limpar o observador quando o componente for desmontado
-    return () => unsubscribe();
+  // Sync vault user to state
+  const syncUser = useCallback((vaultUser) => {
+    if (vaultUser) {
+      setCurrentUser({
+        uid: vaultUser.id,
+        email: vaultUser.email,
+        displayName: vaultUser.name,
+      });
+    } else {
+      setCurrentUser(null);
+    }
   }, []);
 
-  // Função para login
-  const login = async (email, password) => {
-    try {
-      setError(null);
-      await loginWithEmailPassword(email, password);
-      return true;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    }
-  };
+  // Initialize
+  useEffect(() => {
+    vault.onAuthChange(syncUser);
 
-  // Função para logout
-  const handleLogout = async () => {
-    try {
-      setError(null);
-      await logout();
-      return true;
-    } catch (err) {
-      setError(err.message);
-      throw err;
+    async function init() {
+      // Load existing user from storage
+      const user = vault.getUser();
+      if (user) {
+        syncUser(user);
+      } else if (localStorage.getItem("vault_refresh_token")) {
+        const refreshed = await vault.refresh();
+        if (refreshed) {
+          syncUser(vault.getUser());
+        }
+      }
+
+      setLoading(false);
     }
-  };
+
+    init();
+  }, [syncUser]);
+
+  // Login — redirects to Vault
+  const login = useCallback(async () => {
+    await vault.login();
+  }, []);
+
+  // Logout — clear tokens and redirect to Vault hub
+  const logout = useCallback(async () => {
+    await vault.logout(false);
+    setCurrentUser(null);
+    window.location.href = import.meta.env.VITE_VAULT_HUB_URL || "https://auth.clubeducacao.com.br";
+  }, []);
 
   // Verificar se o usuário está autenticado
-  const isAuthenticated = () => {
+  const isAuthenticated = useCallback(() => {
     return !!currentUser;
-  };
+  }, [currentUser]);
 
   // Verificar se a página atual está na área de admin
   const isAdminPage = () => {
@@ -64,25 +77,16 @@ export const AuthProvider = ({ children }) => {
   const value = {
     currentUser,
     loading,
-    error,
     login,
-    logout: handleLogout,
+    logout,
     isAuthenticated,
-    isAdminPage
+    isAdminPage,
+    vault,
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   );
-};
-
-// Hook personalizado
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 };

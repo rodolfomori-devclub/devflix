@@ -1,7 +1,7 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
-// Helper to get auth token
-const getToken = () => localStorage.getItem('devflix_token');
+// Helper to get auth token from Vault
+const getToken = () => localStorage.getItem('vault_access_token');
 
 // Helper for API requests
 const apiRequest = async (endpoint, options = {}) => {
@@ -30,35 +30,31 @@ const apiRequest = async (endpoint, options = {}) => {
 };
 
 // Auth API
+// Note: Authentication is now handled by Vault OAuth2
+// These methods are kept for backward compatibility with the API structure
 export const authApi = {
-  login: async (email, password) => {
-    const result = await apiRequest('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-    if (result.token) {
-      localStorage.setItem('devflix_token', result.token);
-    }
-    return result;
+  // Login and register are now handled by Vault redirect flow
+  login: async () => {
+    console.warn('Login should be handled by Vault OAuth2 flow');
+    return { error: 'Use Vault authentication' };
   },
 
-  register: async (email, password) => {
-    const result = await apiRequest('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-    if (result.token) {
-      localStorage.setItem('devflix_token', result.token);
-    }
-    return result;
+  register: async () => {
+    console.warn('Registration should be handled by Vault');
+    return { error: 'Use Vault authentication' };
   },
 
   verifyToken: async () => {
-    return apiRequest('/auth/verify');
+    // Vault tokens are verified client-side via JWT parsing
+    const token = getToken();
+    return { valid: !!token };
   },
 
   logout: () => {
-    localStorage.removeItem('devflix_token');
+    // Clear all Vault tokens
+    localStorage.removeItem('vault_access_token');
+    localStorage.removeItem('vault_refresh_token');
+    localStorage.removeItem('vault_id_token');
   },
 };
 
