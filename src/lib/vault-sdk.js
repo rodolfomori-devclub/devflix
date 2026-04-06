@@ -62,7 +62,7 @@ export class VaultAuth {
     const codeChallenge = await generateCodeChallenge(codeVerifier);
 
     localStorage.setItem("vault_code_verifier", codeVerifier);
-    localStorage.setItem("vault_redirect_after", "/admin");
+    localStorage.setItem("vault_redirect_after", "/admin/dev");
 
     const params = new URLSearchParams({
       response_type: "code",
