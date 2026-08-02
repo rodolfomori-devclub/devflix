@@ -2,6 +2,13 @@
 import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// O navegador guarda o conteúdo do iframe por origem. Quem abriu a Giovanna
+// antes de um deploy continua vendo a versão antiga mesmo recarregando o
+// DevFlix, porque o endereço do iframe não mudou. Este parâmetro faz o
+// endereço mudar: sobe a data quando a Giovanna receber uma atualização que
+// os alunos precisam ver na hora.
+const GIOVANNA_URL = 'https://gio.devclub.com.br/?v=20260802';
+
 const AiChatModal = ({ isOpen, onClose }) => {
   const modalRef = useRef(null);
   
@@ -86,7 +93,7 @@ const AiChatModal = ({ isOpen, onClose }) => {
             {/* Conteúdo do Modal (iframe) */}
             <div className="w-full h-[calc(100%-60px)]">
               <iframe
-                src="https://gio.devclub.com.br"
+                src={GIOVANNA_URL}
                 title="Chat com IA DevClub"
                 className="w-full h-full border-0"
                 allow="microphone; camera; geolocation"
