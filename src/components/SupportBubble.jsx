@@ -1,6 +1,6 @@
 // src/components/SupportBubble.jsx
 const WHATSAPP_SUPPORT_URL =
-  'https://api.whatsapp.com/send?phone=551152867668&text=Ol%C3%A1,%20tudo%20bem%20?%20Preciso%20de%20ajuda%20do%20suporte';
+  'https://go.rodolfomori.com.br/suporte';
 
 const SupportBubble = () => {
   return (
